@@ -48,6 +48,8 @@ class PlayerManager(
     private var currentWasPreloaded: Boolean = false
     private var currentColdBaselineMs: Long = 0L
 
+    var preloadEnabled: Boolean = true
+
     private var retryCount: Int = 0
     private var maxRetries: Int = MAX_RETRIES
     private var lastVideoItem: VideoItem? = null
@@ -176,6 +178,7 @@ class PlayerManager(
     }
 
     fun preloadNext(videoItem: VideoItem) {
+        if (!preloadEnabled) return
         val targetUrl = videoItem.defaultPlaybackUrl()
         if (targetUrl == state.videoUrl || preloadVideo?.id == videoItem.id) return
 
@@ -360,8 +363,14 @@ class PlayerManager(
             """.trimIndent()
         )
 
+        // Machine-parseable single-line CSV for automated measurement
+        Log.d(
+            "MetricsCSV",
+            "${metrics.videoId},cold=${metrics.coldStartPrepareMs},preload=${metrics.preloadPrepareMs},hit=${metrics.isPreloaded},improve=${metrics.improvementPercent}%"
+        )
+
         metricsScope.launch {
-            metricsRepository?.recordMetrics(metrics, state.qualityLabel)
+            metricsRepository?.recordMetrics(metrics, state.qualityLabel.orEmpty())
         }
     }
 

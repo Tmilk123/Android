@@ -64,6 +64,8 @@ fun FeedScreen(
     val uiState = actualViewModel.uiState
     val pagerState = rememberPagerState(pageCount = { uiState.items.size })
     var showDebugMetrics by remember { mutableStateOf(false) }
+    var preloadEnabled by remember { mutableStateOf(true) }
+    playerManager.preloadEnabled = preloadEnabled
 
     LaunchedEffect(pagerState.currentPage, uiState.items.size) {
         if (uiState.items.isNotEmpty()) {
@@ -206,13 +208,20 @@ fun FeedScreen(
             )
         }
 
-        MetricsDebugToggle(
-            showDebugMetrics = showDebugMetrics,
-            onToggle = { showDebugMetrics = !showDebugMetrics },
+        Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 58.dp, end = 12.dp),
-        )
+        ) {
+            MetricsDebugToggle(
+                showDebugMetrics = showDebugMetrics,
+                onToggle = { showDebugMetrics = !showDebugMetrics },
+            )
+            PreloadToggle(
+                preloadEnabled = preloadEnabled,
+                onToggle = { preloadEnabled = !preloadEnabled },
+            )
+        }
 
         if (showDebugMetrics) {
             PlaybackMetricsPanel(
@@ -235,6 +244,23 @@ private fun MetricsDebugToggle(
     Text(
         text = if (showDebugMetrics) "隐藏指标" else "起播指标",
         color = Color.White,
+        fontSize = 12.sp,
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.48f))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+private fun PreloadToggle(
+    preloadEnabled: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = if (preloadEnabled) "预加载: ON" else "预加载: OFF",
+        color = if (preloadEnabled) Color(0xFF4CAF50) else Color(0xFFFF5722),
         fontSize = 12.sp,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.48f))
