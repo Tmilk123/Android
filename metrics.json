@@ -1,79 +1,74 @@
 {
   "reportMetadata": {
-    "title": "今日头条视频播放流 — 起播性能指标报告",
+    "title": "今日头条视频播放流 — 性能指标报告",
     "project": "MyApplication",
     "generatedAt": "2026-06-04",
-    "testEnvironment": "Android Emulator API 36, Windows 11, WiFi 100Mbps"
+    "dataQualityNote": "所有指标标注了来源：verified（已验证）/ estimated（架构推算）/ pending（需在设备上实测）"
   },
+
   "videoStartupMetrics": {
     "description": "视频起播耗时对比（冷启动 vs 预加载优化）",
+    "dataQuality": "pending — 需在 Android 模拟器或真机上运行 App，滑动视频后查看 MetricsDashboard 获取实测值",
+    "howToMeasure": {
+      "step1": "在 Android Studio 中 Run 本项目到模拟器/真机",
+      "step2": "在视频流页面上下滑动 5-10 个视频，触发冷启动和预加载两种路径",
+      "step3": "点击右上角「起播指标」查看实时数据，或点击「📊 更多指标」进入聚合统计页",
+      "step4": "MetricsDashboard 将显示 avgColdStartMs / avgPreloadMs / avgImprovementPct / preloadHitRate",
+      "dataSource": "PlayerManager.recordFirstReady() → PlaybackMetricsEntity → Room → PlaybackMetricsDao.getAggregateStats()"
+    },
+    "expectedBehavior": {
+      "coldStartMs": "取决于网络状况和视频码率，通常 200-800ms（WiFi/CDN）",
+      "preloadMs": "预加载命中时仅需切换播放器引用，通常 <20ms",
+      "improvementPct": "预加载命中时优化幅度应 >95%，因为完全跳过了 prepare() + 网络请求"
+    },
     "scenarios": [
       {
-        "name": "本地缓存视频",
-        "coldStartMs": { "min": 120, "avg": 185, "max": 310 },
-        "preloadMs": { "min": 3, "avg": 8, "max": 18 },
-        "improvementPct": 95.7,
-        "notes": "ExoPlayer 从本地文件 prepare，延迟主要来自解码器初始化"
+        "name": "CDN 远程视频 (WiFi 环境)",
+        "coldStartMs": { "estimated_range": "200-800ms", "note": "取决于服务器距离和视频码率" },
+        "preloadMs": { "estimated_range": "2-20ms", "note": "仅播放器引用切换 + listener 迁移" },
+        "improvementPct": { "estimated_range": "95-99%", "note": "预加载命中的情况下" },
+        "quality": "estimated"
       },
       {
-        "name": "CDN 远程视频 (1080P)",
-        "coldStartMs": { "min": 280, "avg": 450, "max": 820 },
-        "preloadMs": { "min": 2, "avg": 5, "max": 15 },
-        "improvementPct": 98.9,
-        "notes": "预加载绕过 DNS 解析和 TCP 握手，直接切换已缓冲的播放器"
-      },
-      {
-        "name": "CDN 远程视频 (720P)",
-        "coldStartMs": { "min": 210, "avg": 320, "max": 580 },
-        "preloadMs": { "min": 2, "avg": 5, "max": 12 },
-        "improvementPct": 98.4,
-        "notes": "720P 码率更低，冷启动略快于 1080P"
-      },
-      {
-        "name": "CDN 远程视频 (360P)",
-        "coldStartMs": { "min": 150, "avg": 240, "max": 420 },
-        "preloadMs": { "min": 2, "avg": 4, "max": 10 },
-        "improvementPct": 98.3,
-        "notes": "低清晰度冷启动更快，但预加载仍然显著减少等待"
-      },
-      {
-        "name": "弱网环境模拟 (3G)",
-        "coldStartMs": { "min": 1800, "avg": 3200, "max": 5500 },
-        "preloadMs": { "min": 2, "avg": 6, "max": 20 },
-        "improvementPct": 99.8,
-        "notes": "弱网下预加载价值最大，用户滑动时视频已缓冲就绪"
+        "name": "弱网环境 (3G/4G)",
+        "coldStartMs": { "estimated_range": "1500-5000ms", "note": "网络延迟大幅增加" },
+        "preloadMs": { "estimated_range": "2-20ms", "note": "与网络无关，播放器已在内存中就绪" },
+        "improvementPct": { "estimated_range": "99%+", "note": "弱网下预加载价值最大" },
+        "quality": "estimated"
       }
-    ],
-    "aggregate": {
-      "avgColdStartMs": 879,
-      "avgPreloadMs": 5.6,
-      "avgImprovementPct": 98.2,
-      "estimatedPreloadHitRate": "70-85% (取决于用户滑动行为)"
-    }
+    ]
   },
+
   "codeOptimizations": {
     "templateCleanup": {
       "filesRemoved": 11,
-      "description": "移除未使用的模板文件（Fragment、XML 布局、menu、nav_graph）",
-      "sourceFilesBefore": 56,
-      "sourceFilesAfter": 45,
-      "reductionPct": 19.6,
-      "estimatedApkSavings": "~15 KB"
+      "removedFiles": [
+        "FirstFragment.kt", "SecondFragment.kt",
+        "activity_main.xml", "content_main.xml", "fragment_first.xml", "fragment_second.xml",
+        "nav_graph.xml", "menu_main.xml",
+        "FeedScreenPlaceholder.kt", "SearchScreenPlaceholder.kt", "SearchResultScreenPlaceholder.kt"
+      ],
+      "measurementMethod": "手动计数：删除前后文件数对比",
+      "appModuleKtFiles": 41,
+      "quality": "verified"
     },
     "viewBindingDisabled": {
-      "description": "关闭 viewBinding 减少生成的绑定类",
-      "generatedClassesSaved": "~8 个绑定类"
+      "description": "关闭 viewBinding = true，移除了约 8 个自动生成的绑定类",
+      "quality": "verified"
     }
   },
+
   "crossPlatformMetrics": {
     "kmpSharedModule": {
       "description": "Kotlin Multiplatform 共享搜索排名和推荐词引擎",
-      "filesInShared": 8,
-      "reusableLinesOfCode": "~300",
+      "filesInShared": 7,
+      "sharedLinesOfCode": 323,
       "supportedTargets": ["Android", "iOS (x64, arm64, simulatorArm64)"],
-      "codeReuseRate": "100% — 所有搜索/排名逻辑在 commonMain 中"
+      "measurementMethod": "find shared/src -name '*.kt' | wc -l; cat shared/src/**/*.kt | wc -l",
+      "quality": "verified"
     }
   },
+
   "searchPerformance": {
     "description": "搜索排名性能（SearchRanker 加权评分算法）",
     "algorithm": "O(n) 线性扫描 + 多维度加权评分",
@@ -85,47 +80,35 @@
       "authorNameMatch": 40,
       "descriptionMatch": 30
     },
-    "benchmarks": {
-      "10_videos": "< 2ms",
-      "100_videos": "~15ms (estimated)",
-      "1000_videos": "~150ms (estimated, 建议加索引)"
-    }
+    "currentDatasetSize": 10,
+    "quality": "verified — 评分逻辑来自源码 SearchRanker.kt"
   },
+
   "networkResilience": {
     "description": "网络异常自动恢复能力",
     "features": [
       "自动重试（最多 3 次，递增延迟 500ms/1000ms/1500ms）",
       "手动重试按钮（视频错误状态显示）",
       "预加载失败自动清理"
-    ]
+    ],
+    "quality": "verified — 逻辑来自源码 PlayerManager.kt"
   },
+
   "featureChecklist": {
     "videoPlayback": {
-      "fullscreenPage": true,
-      "swipeVertical": true,
-      "dataPagination": true,
-      "playPause": true,
-      "progressBar": true,
-      "seekProgress": true,
-      "avatar": true,
-      "likeCommentCollectShare": true,
-      "authorNameAndTitle": true
+      "fullscreenPage": true, "swipeVertical": true, "dataPagination": true,
+      "playPause": true, "progressBar": true, "seekProgress": true,
+      "avatar": true, "likeCommentCollectShare": true, "authorNameAndTitle": true
     },
     "search": {
-      "searchBoxOnFeed": true,
-      "recommendWords": true,
-      "searchHistory": true,
-      "searchResults": true,
-      "clickResultNavigate": true
+      "searchBoxOnFeed": true, "recommendWords": true, "searchHistory": true,
+      "searchResults": true, "clickResultNavigate": true
     },
     "advanced": {
-      "preloadOptimization": true,
-      "startupMetrics": true,
-      "qualitySwitching": true,
-      "landscapeFullscreen": true,
-      "imageTextCards": true,
-      "crossPlatformModule": true
+      "preloadOptimization": true, "startupMetrics": true, "qualitySwitching": true,
+      "landscapeFullscreen": true, "imageTextCards": true, "crossPlatformModule": true
     },
-    "completionRate": "17/17 (100%)"
+    "completionRate": "17/17 (100%)",
+    "quality": "verified — 逐项核对源码"
   }
 }

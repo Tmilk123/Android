@@ -1,174 +1,161 @@
 # 性能优化报告 — 今日头条视频播放流
 
 > **日期**: 2026-06-04  
-> **测试环境**: Android Emulator API 36, Windows 11, WiFi 100Mbps  
-> **数据来源**: `PlaybackMetrics` 持久化 + 手动基准测试
+> **数据标注**: ✅ 已验证 = 可复现的实测数据 | ⏳ 估算 = 基于架构的合理推算 | 📱 待测 = 需在设备上实际运行采集
 
 ---
 
-## 1. 视频起播性能优化（核心指标）
+## 1. 视频起播性能优化 📱
 
 ### 1.1 预加载机制
 
-通过 `PlayerManager.preloadNext()` 在当前视频播放时提前准备下一个视频的 ExoPlayer 实例，用户滑动后直接提升预加载播放器为主播放器，避免 `prepare()` 延迟。
-
-### 1.2 起播耗时对比
-
-| 场景 | 冷启动起播 (ms) | 预加载起播 (ms) | 优化幅度 |
-|------|----------------|----------------|---------|
-| 本地缓存 | 185 | 8 | **↓ 95.7%** |
-| CDN 1080P | 450 | 5 | **↓ 98.9%** |
-| CDN 720P | 320 | 5 | **↓ 98.4%** |
-| CDN 360P | 240 | 4 | **↓ 98.3%** |
-| 弱网 (3G) | 3200 | 6 | **↓ 99.8%** |
-| **平均** | **879** | **5.6** | **↓ 98.2%** |
-
-### 1.3 指标说明
-
-- **冷启动起播**: 从 `setMediaItem()` + `prepare()` 到 `STATE_READY` 的完整耗时
-- **预加载起播**: 从提升预加载播放器到可播放的耗时（播放器已提前 `prepare()` 完成）
-- **优化幅度**: `(冷启动 - 预加载) / 冷启动 × 100%`
-
-### 1.4 预加载命中率
-
-- 正常滑动（下一个视频）: ~100%（有 3-8 秒准备时间）
-- 快速连续滑动: ~30-50%（预加载来不及完成）
-- 综合估算: **70-85%**
-
----
-
-## 2. 代码体积优化
-
-### 2.1 模板清理
-
-| 指标 | 清理前 | 清理后 | 减少 |
-|------|--------|--------|------|
-| 源文件数 | 56 | 45 | -19.6% |
-| 无用 XML 布局 | 5 | 0 | -100% |
-| 无用 Fragment | 2 | 0 | -100% |
-| viewBinding 生成类 | 8 | 0 | -100% |
-
-清理的文件：
-- `FirstFragment.kt`, `SecondFragment.kt`
-- `activity_main.xml`, `content_main.xml`, `fragment_first.xml`, `fragment_second.xml`
-- `nav_graph.xml`, `menu_main.xml`
-- `FeedScreenPlaceholder.kt`, `SearchScreenPlaceholder.kt`, `SearchResultScreenPlaceholder.kt`
-
-### 2.2 APK 体积影响
-
-- 预估减少 ~15KB（未压缩）
-- 主要来自移除 viewBinding 生成类 (~8KB) + XML 资源 (~5KB) + Kotlin 编译 (~2KB)
-
----
-
-## 3. 跨平台代码复用（KMP 共享模块）
-
-### 3.1 模块结构
+通过 `PlayerManager.preloadNext()` 在当前视频播放时提前创建独立 ExoPlayer 实例并 `prepare()` 下一个视频。用户滑动后调用 `promotePreloadPlayer()` 直接切换：
 
 ```
-shared/
-  src/commonMain/   ← 跨平台共享代码
-    model/           ← VideoItem, FeedItem, RecommendWord, SearchRankedVideo
-    search/          ← SearchRanker, RecommendWordEngine
-  src/androidMain/   ← Android 平台特定代码
-  src/iosMain/       ← iOS 平台特定代码
+冷启动路径:  setMediaItem() → prepare() → [网络请求] → [解码器初始化] → STATE_READY
+预加载路径:  promotePreloadPlayer() → [切换 listener] → 立即可播放
 ```
 
-### 3.2 复用指标
+### 1.2 指标采集架构 ✅
 
-| 指标 | 值 |
-|------|-----|
-| 共享代码行数 | ~300 行 |
-| 支持平台 | Android, iOS (x64, arm64, simulatorArm64) |
-| 代码复用率 | 100%（搜索/排名逻辑零重复） |
-| 可复用模块 | SearchRanker, RecommendWordEngine, 所有数据模型 |
+每次起播都会通过 `PlayerManager.recordFirstReady()` 记录：
 
-### 3.3 Android 集成方式
+```kotlin
+// PlayerManager.kt:285-306
+val metrics = PlaybackMetrics(
+    videoId = videoId,
+    coldStartPrepareMs = if (isPreloaded) coldBaselineMs else readyCostMs,
+    preloadPrepareMs = if (isPreloaded) readyCostMs else 0L,
+    isPreloaded = currentWasPreloaded,
+    improvementPercent = ...
+)
+// → logMetrics() → metricsRepository.recordMetrics() → Room DB
+```
 
-Android 端的 `SearchRanker` 和 `RecommendWordEngine` 现在是对 KMP 共享实现的薄封装，负责 Android 模型 ↔ 共享模型之间的类型转换，核心逻辑全部在 `commonMain` 中执行。
+数据存入 `playback_metrics` 表，通过 `PlaybackMetricsDao.getAggregateStats()` 聚合查询：
+
+```sql
+SELECT
+    COUNT(*) as totalCount,
+    AVG(cold_start_prepare_ms) as avgColdStartMs,
+    AVG(preload_prepare_ms) as avgPreloadMs,
+    AVG(improvement_percent) as avgImprovementPct,
+    CAST(SUM(CASE WHEN is_preloaded=1 THEN 1 ELSE 0 END) AS REAL)/COUNT(*)*100 as preloadHitRate
+FROM playback_metrics
+```
+
+### 1.3 如何获取真实数据 📱
+
+```
+1. 在 Android Studio 中 Run 到模拟器/真机
+2. 上下滑动视频流，播放 10+ 个视频（覆盖冷启动和预加载两种路径）
+3. 点击右上角「起播指标」→「📊 更多指标」查看聚合统计
+4. 记录 avgColdStartMs / avgPreloadMs / avgImprovementPct / preloadHitRate
+```
+
+### 1.4 预期效果 ⏳
+
+| 场景 | 冷启动起播 (预估) | 预加载起播 (预估) | 优化原理 |
+|------|------------------|------------------|---------|
+| CDN/WiFi 环境 | 200-800ms | <20ms | 跳过 DNS + TCP + prepare() |
+| 弱网环境 | 1500-5000ms | <20ms | 播放器已在内存中就绪，与网络无关 |
+
+预加载命中时优化幅度应 **>95%**（因为完全跳过了网络请求和播放器初始化）。
 
 ---
 
-## 4. 搜索性能
+## 2. 代码体积优化 ✅
 
-### 4.1 排名算法
+### 2.1 模板清理（已执行）
+
+| 指标 | 值 | 验证方式 |
+|------|-----|---------|
+| 删除文件 | 11 个 | `git log --diff-filter=D` |
+| 当前 app 模块 Kotlin 文件 | 41 个 | `find app/src/main/java -name "*.kt" \| wc -l` ✅ 已验证 |
+| viewBinding | 已关闭 | `app/build.gradle.kts` 中 `viewBinding = true` 已移除 ✅ |
+
+删除清单：
+- `FirstFragment.kt`, `SecondFragment.kt` — 模板 Fragment，从未被实例化
+- `activity_main.xml`, `content_main.xml`, `fragment_first.xml`, `fragment_second.xml` — 模板布局，MainActivity 使用 Compose
+- `nav_graph.xml`, `menu_main.xml` — 模板导航/菜单
+- `FeedScreenPlaceholder.kt`, `SearchScreenPlaceholder.kt`, `SearchResultScreenPlaceholder.kt` — 占位 Composable，从未被调用
+
+---
+
+## 3. 跨平台代码复用 ✅
+
+### 3.1 KMP 共享模块
+
+```
+shared/src/commonMain/kotlin/com/example/myapplication/shared/
+├── model/
+│   ├── VideoItem.kt          (含 defaultQuality/defaultPlaybackUrl/findQuality)
+│   ├── ImageTextItem.kt
+│   ├── FeedItem.kt           (sealed class: Video | ImageText)
+│   ├── RecommendWord.kt      (含 SOURCE_* 常量)
+│   └── SearchRankedVideo.kt
+└── search/
+    ├── SearchRanker.kt        (加权评分算法: 标题100/标签70/推荐词60/作者40/描述30)
+    └── RecommendWordEngine.kt (4源融合: AI生成+标签+标题关键词+热词)
+
+shared/src/androidMain/  ← Android target
+shared/src/iosMain/      ← iOS target (x64, arm64, simulatorArm64)
+```
+
+### 3.2 已验证指标 ✅
+
+| 指标 | 值 | 验证命令 |
+|------|-----|---------|
+| KMP 文件数 | 7 | `find shared/src -name "*.kt" \| wc -l` |
+| 共享代码行数 | 323 | `cat shared/src/**/*.kt \| wc -l` |
+| 支持平台 | Android + iOS (3 targets) | `shared/build.gradle.kts` |
+| Android 集成 | 薄封装 delegate 模式 | `app/.../data/SearchRanker.kt` → `sharedRanker.searchVideos()` |
+
+---
+
+## 4. 搜索算法 ✅
+
+### 4.1 排名评分（来自源码 `SearchRanker.kt`）
 
 | 匹配维度 | 权重 | 匹配方式 |
 |---------|------|---------|
-| 标题精确匹配 | 100 | `contains(keyword)` |
-| 标题部分匹配 | 80 | 2-字符滑动窗口 + 分词匹配 |
-| 标签匹配 | 70 | 完全包含匹配 |
-| 推荐词匹配 | 60 | 完全包含匹配 |
-| 作者名匹配 | 40 | 完全包含匹配 |
-| 描述匹配 | 30 | 完全包含匹配 |
+| 标题精确匹配 | 100 | `title.contains(keyword, ignoreCase=true)` |
+| 标题部分匹配 | 80 | 2-字符滑动窗口 + 分词 token 匹配 |
+| 标签匹配 | 70 | `tags.filter { it.contains(keyword) }` |
+| 推荐词匹配 | 60 | `recommendWords.filter { it.contains(keyword) }` |
+| 作者名匹配 | 40 | `authorName.contains(keyword)` |
+| 描述匹配 | 30 | `description.contains(keyword)` |
 
-### 4.2 性能基准
-
-| 数据量 | 搜索耗时 | 说明 |
-|--------|---------|------|
-| 10 条 | < 2ms | 当前数据集，即时响应 |
-| 100 条 | ~15ms | 预估，60fps 下无感知 |
-| 1000 条 | ~150ms | 预估，建议引入倒排索引 |
+算法复杂度: O(n) 线性扫描，当前数据集 10 条视频，结果即时返回。
 
 ---
 
-## 5. 网络韧性
+## 5. 网络韧性 ✅
 
-### 5.1 自动恢复能力
+### 5.1 自动重试策略（来自源码 `PlayerManager.kt`）
 
-- **自动重试**: 最多 3 次，递增延迟 (500ms → 1000ms → 1500ms)
-- **手动重试**: 视频错误状态显示"点击重试"按钮
-- **预加载失败清理**: 预加载播放器出错自动释放
+```kotlin
+const val MAX_RETRIES = 3
+const val RETRY_DELAY_BASE_MS = 500L  // 递增: 500ms → 1000ms → 1500ms
 
-### 5.2 错误状态 UI
-
-- 错误提示: "视频加载失败"
-- 重试进度: "重试 (1/3)"
-- 手动重试按钮: 半透明白底圆角按钮
-
----
-
-## 6. 指标持久化
-
-### 6.1 数据库表
-
-```sql
-CREATE TABLE playback_metrics (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    video_id TEXT NOT NULL,
-    video_url TEXT NOT NULL,
-    quality_label TEXT NOT NULL,
-    cold_start_prepare_ms INTEGER NOT NULL,
-    preload_prepare_ms INTEGER NOT NULL,
-    display_start_ms INTEGER NOT NULL,
-    is_preloaded INTEGER NOT NULL DEFAULT 0,
-    improvement_percent INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL
-);
+override fun onPlayerError(error: PlaybackException) {
+    retryCount++
+    if (retryCount < maxRetries) scheduleRetry()  // 自动重试
+}
 ```
 
-### 6.2 聚合查询
+### 5.2 手动重试 UI（来自源码 `VideoFeedCard.kt`）
 
-- 总记录数、平均冷启动耗时、平均预加载耗时
-- 平均实际起播耗时、平均优化幅度
-- 预加载命中率
-
-### 6.3 可视化
-
-- Feed 页 debug 面板: 实时显示当前视频起播指标
-- MetricsDashboard 页: 历史聚合统计 + 最近 20 条记录
-- 导航: Feed → "📊 更多指标" → MetricsDashboard
+错误状态显示「视频加载失败」+「重试 (N/3)」+「点击重试」按钮，调用 `playerManager.retry()`。
 
 ---
 
-## 7. 需求完成度总结
+## 6. 需求完成度 ✅
 
-| 类别 | 完成 | 总计 | 完成率 |
-|------|------|------|--------|
-| 视频功能 | 8 | 8 | 100% |
-| 搜索功能 | 6 | 6 | 100% |
-| 进阶要求 | 5 | 5 | 100% |
-| 补充要求 | 4 | 4 | 100% |
-| **总计** | **23** | **23** | **100%** |
-
-> 补充要求的"跨平台搜索结果页"已通过 KMP 共享模块实现，搜索排名和推荐词引擎代码可在 iOS 端直接复用。
+| 类别 | 完成 | 总计 | 验证方式 |
+|------|------|------|---------|
+| 视频功能 | 8 | 8 | 源码逐项核对 |
+| 搜索功能 | 6 | 6 | 源码逐项核对 |
+| 进阶要求 | 5 | 5 | 源码逐项核对 |
+| 补充要求 | 4 | 4 | 含 KMP 跨平台模块 |
+| **总计** | **23** | **23** | |
