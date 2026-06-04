@@ -1,21 +1,31 @@
 package com.example.myapplication.ui.feed
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -28,11 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -64,6 +77,10 @@ fun VideoFeedCard(
     var isQualityMenuOpen by remember(item.id) { mutableStateOf(false) }
     var isLandscapeFullscreen by remember(item.id) { mutableStateOf(false) }
 
+    // Show play/pause indicator briefly after state change
+    var showPlayIndicator by remember { mutableStateOf(false) }
+    var lastPlayingState by remember { mutableStateOf(false) }
+
     LaunchedEffect(isActive, item.videoUrl) {
         if (isActive) {
             playerManager.play(item)
@@ -72,112 +89,139 @@ fun VideoFeedCard(
         }
     }
 
+    // Progress refresh loop
     LaunchedEffect(isActive, item.videoUrl) {
         while (isActive) {
             playerManager.refreshProgress()
-            delay(500)
+            delay(250)
+        }
+    }
+
+    // Play indicator auto-dismiss
+    LaunchedEffect(playerState.isPlaying) {
+        if (isCurrentVideo && playerState.isPlaying != lastPlayingState) {
+            lastPlayingState = playerState.isPlaying
+            showPlayIndicator = true
+            delay(800)
+            showPlayIndicator = false
         }
     }
 
     DisposableEffect(fullscreenController) {
-        onDispose {
-            fullscreenController?.exitLandscapeFullscreen()
-        }
+        onDispose { fullscreenController?.exitLandscapeFullscreen() }
     }
+
+    val videoReady = isCurrentVideo && !playerState.isLoading && !playerState.hasError
 
     Box(
         modifier = modifier
             .background(Color.Black)
-            .clickable(enabled = isActive) {
-                playerManager.togglePlayPause()
-            },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                enabled = isActive
+            ) { playerManager.togglePlayPause() },
     ) {
+        // ── Layer 1: Cover image (always visible underneath) ──
+        AsyncImage(
+            model = item.coverUrl,
+            contentDescription = item.title,
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(if (videoReady) 0f else 1f),
+            contentScale = ContentScale.Crop,
+        )
+
+        // ── Layer 2: Video surface (fades in when ready) ──
         if (isActive) {
-            AndroidView(
-                factory = { context ->
-                    PlayerView(context).apply {
-                        useController = false
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        player = playerManager.player
-                    }
-                },
-                update = { view ->
-                    view.player = playerManager.player
-                },
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            AsyncImage(
-                model = item.coverUrl,
-                contentDescription = item.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
+            AnimatedVisibility(
+                visible = videoReady,
+                enter = fadeIn(animationSpec = tween(300)),
+                exit = fadeOut(),
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            player = playerManager.player
+                        }
+                    },
+                    update = { view -> view.player = playerManager.player },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
 
+        // ── Layer 3: Gradient overlay ──
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.16f),
+                            Color.Black.copy(alpha = 0.20f),
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.72f),
+                            Color.Black.copy(alpha = 0.74f),
                         )
                     )
                 )
         )
 
+        // ── Layer 4: Loading / Error / Play indicator ──
         when {
             isCurrentVideo && playerState.isLoading -> {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center),
+                ShimmerLoadingOverlay(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f)),
                 )
             }
 
             isCurrentVideo && playerState.hasError -> {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = "视频加载失败",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                    )
-                    if (playerState.canRetry) {
-                        Text(
-                            text = "重试 (${playerState.retryCount}/${3})",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                    Text(
-                        text = "点击重试",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.25f))
-                            .clickable { playerManager.retry() }
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                    )
-                }
-            }
-
-            isCurrentVideo -> {
-                PlaybackStatusIcon(
-                    isPlaying = playerState.isPlaying,
+                ErrorOverlay(
+                    canRetry = playerState.canRetry,
+                    retryCount = playerState.retryCount,
+                    onRetry = { playerManager.retry() },
                     modifier = Modifier.align(Alignment.Center),
                 )
             }
+
+            isCurrentVideo && showPlayIndicator -> {
+                AnimatedVisibility(
+                    visible = showPlayIndicator,
+                    enter = fadeIn(tween(150)) + scaleIn,
+                    exit = fadeOut(tween(400)),
+                ) {
+                    PlayPauseIcon(
+                        isPlaying = playerState.isPlaying,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+            }
         }
 
+        // ── Layer 5: Duration badge (on inactive pages) ──
+        if (!isActive && item.durationText.isNotBlank()) {
+            Text(
+                text = item.durationText,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 12.dp, bottom = 96.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.65f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+
+        // ── Layer 6: Controls (only on current video) ──
         if (isCurrentVideo) {
+            // Landscape toggle
             if (isLandscapeFullscreen) {
                 Text(
                     text = "返回竖屏",
@@ -196,7 +240,7 @@ fun VideoFeedCard(
                 )
             } else {
                 Text(
-                    text = "横屏",
+                    text = "⛶ 横屏",
                     color = Color.White,
                     fontSize = 13.sp,
                     modifier = Modifier
@@ -212,6 +256,7 @@ fun VideoFeedCard(
                 )
             }
 
+            // Quality selector
             if (item.qualityUrls.isNotEmpty()) {
                 Box(
                     modifier = Modifier
@@ -234,7 +279,12 @@ fun VideoFeedCard(
                     ) {
                         item.qualityUrls.forEach { quality ->
                             DropdownMenuItem(
-                                text = { Text(text = quality.label) },
+                                text = {
+                                    Text(
+                                        text = if (quality.label == playerState.qualityLabel)
+                                            "● ${quality.label}" else "  ${quality.label}"
+                                    )
+                                },
                                 onClick = {
                                     isQualityMenuOpen = false
                                     playerManager.switchQuality(item, quality.label)
@@ -245,6 +295,7 @@ fun VideoFeedCard(
                 }
             }
 
+            // Progress bar
             PlaybackProgress(
                 positionMs = playerState.positionMs,
                 durationMs = playerState.durationMs,
@@ -252,28 +303,106 @@ fun VideoFeedCard(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(start = 12.dp, end = 12.dp, bottom = 6.dp),
+                    .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
             )
         }
     }
 }
 
+// ── Sub-composables ──
+
 @Composable
-private fun PlaybackStatusIcon(
+private fun PlayPauseIcon(
     isPlaying: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val scale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(200),
+        label = "icon_scale",
+    )
     Box(
         modifier = modifier
-            .size(72.dp)
+            .size(80.dp)
+            .scale(scale)
             .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.30f)),
+            .background(Color.Black.copy(alpha = 0.35f)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = if (isPlaying) "暂停" else "播放",
+        Icon(
+            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = if (isPlaying) "暂停" else "播放",
+            tint = Color.White.copy(alpha = 0.92f),
+            modifier = Modifier.size(38.dp),
+        )
+    }
+}
+
+@Composable
+private fun ShimmerLoadingOverlay(modifier: Modifier = Modifier) {
+    val shimmerAlpha by animateFloatAsState(
+        targetValue = 0.6f,
+        animationSpec = tween(600),
+        label = "shimmer",
+    )
+    Box(
+        modifier = modifier.alpha(shimmerAlpha),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.material3.CircularProgressIndicator(
             color = Color.White,
-            fontSize = 16.sp,
+            strokeWidth = 2.5.dp,
+            modifier = Modifier.size(32.dp),
+        )
+    }
+}
+
+@Composable
+private fun ErrorOverlay(
+    canRetry: Boolean,
+    retryCount: Int,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.5f),
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.35f))
+                .padding(12.dp),
+        )
+        Text(
+            text = "加载失败",
+            color = Color.White.copy(alpha = 0.85f),
+            fontSize = 15.sp,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        if (canRetry) {
+            Text(
+                text = "自动重试中 ($retryCount/3)",
+                color = Color.White.copy(alpha = 0.55f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Text(
+            text = "点击重试",
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .padding(top = 14.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White.copy(alpha = 0.22f))
+                .clickable(onClick = onRetry)
+                .padding(horizontal = 28.dp, vertical = 10.dp),
         )
     }
 }
@@ -296,23 +425,30 @@ private fun PlaybackProgress(
             Text(
                 text = formatPlaybackTime(positionMs),
                 color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp,
+                fontSize = 11.sp,
             )
             Text(
                 text = formatPlaybackTime(durationMs),
                 color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp,
+                fontSize = 11.sp,
             )
         }
         Slider(
             value = sliderValue,
             onValueChange = { onSeek(it.toLong()) },
             valueRange = 0f..sliderMax,
+            modifier = Modifier.height(36.dp), // Larger touch target
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
                 activeTrackColor = Color.White,
-                inactiveTrackColor = Color.White.copy(alpha = 0.28f),
+                inactiveTrackColor = Color.White.copy(alpha = 0.22f),
             ),
         )
     }
 }
+
+// Scale-in animation helper
+private val scaleIn = androidx.compose.animation.scaleIn(
+    initialScale = 1.4f,
+    animationSpec = tween(250),
+)

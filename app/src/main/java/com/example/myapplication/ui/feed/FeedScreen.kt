@@ -1,30 +1,38 @@
 package com.example.myapplication.ui.feed
 
+import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -66,6 +74,19 @@ fun FeedScreen(
     var showDebugMetrics by remember { mutableStateOf(false) }
     var preloadEnabled by remember { mutableStateOf(true) }
     playerManager.preloadEnabled = preloadEnabled
+
+    // Fix status bar icons for black background (light icons)
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val activity = view.context as? Activity ?: return@SideEffect
+            val window = activity.window
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
+        }
+    }
 
     LaunchedEffect(pagerState.currentPage, uiState.items.size) {
         if (uiState.items.isNotEmpty()) {
@@ -121,12 +142,42 @@ fun FeedScreen(
     ) {
         when {
             uiState.items.isEmpty() && uiState.isLoading -> {
-                FeedStateMessage(
-                    title = "正在加载",
-                    description = "请稍候",
-                    showProgress = true,
-                    modifier = Modifier.align(Alignment.Center),
-                )
+                // Skeleton loading screen
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    // Animated logo placeholder
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White.copy(alpha = 0.7f),
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Text(
+                        text = "正在加载",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 20.dp),
+                    )
+                    Text(
+                        text = "精彩内容即将呈现",
+                        color = Color.White.copy(alpha = 0.35f),
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
             }
 
             uiState.items.isEmpty() -> {
