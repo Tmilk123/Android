@@ -1,18 +1,30 @@
 package com.example.myapplication.ui.feed
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,27 +47,39 @@ fun FeedOverlay(
     onRecommendWordClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+
     Box(modifier = modifier.fillMaxSize()) {
-        AppSearchBar(
-            onClick = onSearchClick,
+        // ── Top: 分类标签栏 + 搜索入口 ──
+        Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(start = 16.dp, top = 12.dp, end = 16.dp),
-        )
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(start = 16.dp, end = 12.dp, bottom = 86.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .statusBarsPadding(),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            CategoryTabRow(
+                selectedIndex = selectedTab,
+                onTabSelected = { selectedTab = it },
+            )
+            AppSearchBar(
+                onClick = onSearchClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
+
+        // ── Bottom Left: 作者信息 + 标题 + 话题标签 ──
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 80.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // 作者行: @authorName + 「关注」
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = "@$authorName",
@@ -65,36 +89,61 @@ fun FeedOverlay(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // 「关注」按钮
                 Text(
-                    text = title,
+                    text = "关注",
                     color = Color.White,
-                    fontSize = 18.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = description,
-                    color = Color.White.copy(alpha = 0.88f),
-                    fontSize = 14.sp,
-                    lineHeight = 19.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                RecommendWordRow(
-                    words = recommendWords,
-                    onWordClick = onRecommendWordClick,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFD81E06))
+                        .clickable { }
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                 )
             }
 
-            InteractionButtons(
-                authorName = authorName,
-                authorAvatar = authorAvatar,
-                likeCount = likeCount,
-                commentCount = commentCount,
-                collectCount = collectCount,
-                shareCount = shareCount,
+            // 标题
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            // 描述
+            if (description.isNotBlank()) {
+                Text(
+                    text = description,
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            // 话题标签: 蓝色可点击
+            RecommendWordRow(
+                words = recommendWords,
+                onWordClick = onRecommendWordClick,
             )
         }
+
+        // ── Bottom Right: 头像 + 互动按钮 ──
+        InteractionButtons(
+            authorName = authorName,
+            authorAvatar = authorAvatar,
+            likeCount = likeCount,
+            commentCount = commentCount,
+            collectCount = collectCount,
+            shareCount = shareCount,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 8.dp, bottom = 14.dp),
+        )
     }
 }

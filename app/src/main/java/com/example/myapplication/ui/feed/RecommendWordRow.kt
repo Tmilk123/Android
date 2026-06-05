@@ -24,22 +24,21 @@ fun RecommendWordRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier,
+        modifier = modifier.padding(top = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         words.take(5).forEach { recommendWord ->
             Text(
-                text = recommendWord.word,
-                color = Color.White,
-                fontSize = 13.sp,
+                text = "#${recommendWord.word}",
+                color = Color(0xFF8CB3D9),  // 今日头条标签蓝色
+                fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .widthIn(max = 112.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.18f))
+                    .widthIn(max = 120.dp)
+                    .clip(RoundedCornerShape(4.dp))
                     .clickable { onWordClick(recommendWord.word) }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(vertical = 2.dp),
             )
         }
     }

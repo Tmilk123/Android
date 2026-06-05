@@ -16,9 +16,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -72,10 +76,10 @@ fun SearchResultScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             IconButton(onClick = onBackClick) {
-                Text(
-                    text = "<",
-                    color = Color(0xFF222222),
-                    fontSize = 24.sp,
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回",
+                    tint = Color(0xFF222222),
                 )
             }
             OutlinedTextField(
@@ -85,6 +89,13 @@ fun SearchResultScreen(
                     .weight(1f)
                     .height(56.dp),
                 singleLine = true,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = Color(0xFF888888),
+                    )
+                },
                 shape = RoundedCornerShape(28.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { submitSearch() }),
@@ -92,9 +103,10 @@ fun SearchResultScreen(
             Button(
                 onClick = ::submitSearch,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF222222),
+                    containerColor = Color(0xFFD81E06),
                     contentColor = Color.White,
                 ),
+                shape = RoundedCornerShape(20.dp),
             ) {
                 Text(text = "搜索")
             }

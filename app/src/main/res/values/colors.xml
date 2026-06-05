@@ -2,4 +2,58 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- 今日头条品牌色: 头条红 -->
+    <color name="toutiao_red">#FFD81E06</color>
+    <color name="toutiao_red_dark">#FFB71A05</color>
+    <color name="toutiao_red_light">#FFE84D3A</color>
+
+    <!-- 旧主色→改为头条红 -->
+    <color name="primary">#FFD81E06</color>
+    <color name="primary_dark">#FFB71A05</color>
+    <color name="primary_light">#FFE84D3A</color>
+    <color name="on_primary">#FFFFFFFF</color>
+
+    <color name="secondary">#FF10B981</color>
+    <color name="secondary_dark">#FF059669</color>
+    <color name="secondary_light">#FF34D399</color>
+    <color name="on_secondary">#FFFFFFFF</color>
+
+    <!-- 功能强调色 -->
+    <color name="accent_red">#FFD81E06</color>
+    <color name="accent_orange">#FFFF5722</color>
+    <color name="accent_green">#FF4CAF50</color>
+
+    <!-- 灰度体系 -->
+    <color name="gray_50">#FFF9FAFB</color>
+    <color name="gray_100">#FFF3F4F6</color>
+    <color name="gray_200">#FFE5E7EB</color>
+    <color name="gray_300">#FFD1D5DB</color>
+    <color name="gray_400">#FF9CA3AF</color>
+    <color name="gray_500">#FF6B7280</color>
+    <color name="gray_600">#FF4B5563</color>
+    <color name="gray_700">#FF374151</color>
+    <color name="gray_800">#FF1F2937</color>
+    <color name="gray_900">#FF111827</color>
+
+    <!-- 浅色主题 -->
+    <color name="background_light">#FFF6F6F6</color>
+    <color name="surface_light">#FFFFFFFF</color>
+    <color name="on_background_light">#FF111827</color>
+    <color name="on_surface_light">#FF1F2937</color>
+
+    <!-- 深色主题 -->
+    <color name="background_dark">#FF000000</color>
+    <color name="surface_dark">#FF1F2937</color>
+    <color name="on_background_dark">#FFFFFFFF</color>
+    <color name="on_surface_dark">#FFF3F4F6</color>
+
+    <!-- 文字颜色 -->
+    <color name="text_primary_light">#FF222222</color>
+    <color name="text_secondary_light">#FF666666</color>
+    <color name="text_tertiary_light">#FF888888</color>
+
+    <color name="text_primary_dark">#FFFFFFFF</color>
+    <color name="text_secondary_dark">#FFE5E7EB</color>
+    <color name="text_tertiary_dark">#FF9CA3AF</color>
 </resources>

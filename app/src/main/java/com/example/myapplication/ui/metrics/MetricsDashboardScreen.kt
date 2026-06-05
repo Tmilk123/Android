@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.metrics
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +31,9 @@ fun MetricsDashboardScreen(
     var aggregateStats by remember { mutableStateOf<MetricsAggregateStats?>(null) }
     var recentMetrics by remember { mutableStateOf<List<PlaybackMetricsEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var isExporting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         aggregateStats = metricsRepository.getAggregateStats()
@@ -46,7 +50,7 @@ fun MetricsDashboardScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(onClick = onBackClick) {
@@ -60,6 +64,33 @@ fun MetricsDashboardScreen(
                 color = Color(0xFF222222),
             )
             Spacer(modifier = Modifier.weight(1f))
+            TextButton(
+                onClick = {
+                    scope.launch {
+                        isExporting = true
+                        val jsonResult = metricsRepository.exportToJson()
+                        val mdResult = metricsRepository.exportToMarkdown()
+                        isExporting = false
+
+                        val message = if (jsonResult.isSuccess && mdResult.isSuccess) {
+                            "导出成功！\nJSON: ${jsonResult.getOrNull()}\nMD: ${mdResult.getOrNull()}"
+                        } else {
+                            "导出失败: ${jsonResult.exceptionOrNull()?.message ?: mdResult.exceptionOrNull()?.message}"
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    }
+                },
+                enabled = !isExporting,
+            ) {
+                if (isExporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text("📤 导出", color = Color(0xFF2563EB), fontSize = 14.sp)
+                }
+            }
             TextButton(onClick = {
                 scope.launch {
                     metricsRepository.clearAll()
@@ -225,6 +256,8 @@ private fun ExplanationCard() {
             ExplanationRow("优化幅度", "冷启动耗时中通过预加载节省的比例 = (冷 - 预) / 冷 × 100%")
             Spacer(modifier = Modifier.height(8.dp))
             ExplanationRow("预加载命中率", "所有起播中走预加载路径的比例，越高说明预加载策略越有效")
+            Spacer(modifier = Modifier.height(8.dp))
+            ExplanationRow("导出功能", "点击右上角「📤 导出」可将数据保存为 JSON 和 Markdown 报告")
         }
     }
 }
@@ -290,7 +323,7 @@ private fun MetricItemCard(metric: PlaybackMetricsEntity) {
                     color = Color(0xFF333333),
                 )
                 Text(
-                    text = "${metric.qualityLabel}",
+                    text = metric.qualityLabel,
                     fontSize = 11.sp,
                     color = Color(0xFF999999),
                 )

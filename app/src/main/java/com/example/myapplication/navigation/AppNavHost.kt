@@ -21,7 +21,7 @@ fun AppNavHost() {
     val context = LocalContext.current
     val metricsRepository = remember {
         val database = AppDatabase.getDatabase(context)
-        MetricsRepository(database.playbackMetricsDao())
+        MetricsRepository(database.playbackMetricsDao(), context)
     }
 
     NavHost(
