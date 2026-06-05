@@ -100,7 +100,8 @@ class FakeFeedRepository {
                 collectCount = "4500",
                 shareCount = "800",
                 tags = listOf("摄影", "街拍"),
-                recommendWords = listOf("构图技巧", "雨天拍照")
+                recommendWords = listOf("构图技巧", "雨天拍照"),
+                imageUrls = listOf(testImageUrls[2], testImageUrls[3], testImageUrls[0])
             )
         ),
         FeedItem.Video(
@@ -134,7 +135,8 @@ class FakeFeedRepository {
                 collectCount = "7000",
                 shareCount = "560",
                 tags = listOf("学习", "笔记"),
-                recommendWords = listOf("学习方法", "知识管理")
+                recommendWords = listOf("学习方法", "知识管理"),
+                imageUrls = listOf(testImageUrls[4], testImageUrls[2], testImageUrls[5])
             )
         ),
         FeedItem.Video(
@@ -186,7 +188,8 @@ class FakeFeedRepository {
                 collectCount = "3900",
                 shareCount = "760",
                 tags = listOf("城市", "生活"),
-                recommendWords = listOf("通勤", "街道观察")
+                recommendWords = listOf("通勤", "街道观察"),
+                imageUrls = listOf(testImageUrls[1], testImageUrls[3], testImageUrls[4])
             )
         ),
         FeedItem.Video(
@@ -238,7 +241,8 @@ class FakeFeedRepository {
                 collectCount = "1.8万",
                 shareCount = "1200",
                 tags = listOf("美食", "家常菜"),
-                recommendWords = listOf("下饭菜", "炖菜")
+                recommendWords = listOf("下饭菜", "炖菜"),
+                imageUrls = listOf(testImageUrls[4], testImageUrls[1], testImageUrls[0])
             )
         ),
         FeedItem.Video(
@@ -272,7 +276,8 @@ class FakeFeedRepository {
                 collectCount = "3100",
                 shareCount = "350",
                 tags = listOf("电影", "设计"),
-                recommendWords = listOf("海报设计", "色彩")
+                recommendWords = listOf("海报设计", "色彩"),
+                imageUrls = listOf(testImageUrls[0], testImageUrls[5], testImageUrls[2])
             )
         ),
         FeedItem.Video(
@@ -306,7 +311,8 @@ class FakeFeedRepository {
                 collectCount = "5200",
                 shareCount = "2100",
                 tags = listOf("新闻", "资讯"),
-                recommendWords = listOf("今日要闻", "民生")
+                recommendWords = listOf("今日要闻", "民生"),
+                imageUrls = listOf(testImageUrls[2], testImageUrls[3], testImageUrls[1])
             )
         ),
         FeedItem.Video(

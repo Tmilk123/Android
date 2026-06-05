@@ -151,7 +151,7 @@ fun VideoFeedCard(
                     factory = { ctx ->
                         PlayerView(ctx).apply {
                             useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                             player = playerManager.player
                         }
                     },
