@@ -63,7 +63,7 @@ fun FeedScreen(
         val database = AppDatabase.getDatabase(context)
         FeedViewModel(
             FeedRepository(
-                fakeFeedRepository = FakeFeedRepository(useRealData = AppConfig.useRealData),
+                fakeFeedRepository = FakeFeedRepository(useRealData = AppConfig.dataSource != "fake"),
                 feedDao = database.feedDao(),
             )
         )
@@ -75,7 +75,7 @@ fun FeedScreen(
     var showDebugMetrics by remember { mutableStateOf(false) }
     var preloadEnabled by remember { mutableStateOf(true) }
     var isLandscapeFullscreen by remember { mutableStateOf(false) }
-    var useRealData by remember { mutableStateOf(AppConfig.useRealData) }
+    var useRealData by remember { mutableStateOf(AppConfig.dataSource != "fake") }
     playerManager.preloadEnabled = preloadEnabled
 
     // Fix status bar icons for black background (light icons)
@@ -287,9 +287,13 @@ fun FeedScreen(
             DataSourceToggle(
                 useRealData = useRealData,
                 onToggle = {
-                    useRealData = !useRealData
-                    AppConfig.useRealData = useRealData
-                    // 重新创建 ViewModel 以加载新数据源
+                    // 循环: fake → verified → pexels → fake
+                    AppConfig.dataSource = when (AppConfig.dataSource) {
+                        "fake" -> "verified"
+                        "verified" -> "pexels"
+                        else -> "fake"
+                    }
+                    useRealData = AppConfig.dataSource != "fake"
                 },
             )
         }
@@ -330,9 +334,19 @@ private fun DataSourceToggle(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val label = when (AppConfig.dataSource) {
+        "pexels" -> "素材: Pexels"
+        "verified" -> "素材: 已验证"
+        else -> "素材: 测试"
+    }
+    val toggleColor = when (AppConfig.dataSource) {
+        "pexels" -> Color(0xFF4CAF50)
+        "verified" -> Color(0xFF2196F3)
+        else -> Color(0xFFFF9800)
+    }
     Text(
-        text = if (useRealData) "素材: 真实" else "素材: 测试",
-        color = if (useRealData) Color(0xFF4CAF50) else Color(0xFFFF9800),
+        text = label,
+        color = toggleColor,
         fontSize = 12.sp,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.48f))

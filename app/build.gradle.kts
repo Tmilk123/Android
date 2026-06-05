@@ -75,6 +75,13 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     ksp(libs.room.compiler)
+
+    // Pexels API: Retrofit + Gson
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.espresso.core)

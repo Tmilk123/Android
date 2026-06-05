@@ -6,6 +6,7 @@ import com.example.myapplication.model.FeedItem
 import com.example.myapplication.model.ImageTextItem
 import com.example.myapplication.model.VideoQuality
 import com.example.myapplication.model.VideoItem
+import com.example.myapplication.network.PexelsFeedRepository
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -18,6 +19,8 @@ class FeedRepository(
     private val fakeFeedRepository: FakeFeedRepository,
     private val feedDao: FeedDao,
 ) {
+    private val pexelsRepository: PexelsFeedRepository?
+        get() = AppConfig.pexelsRepository
 
     suspend fun loadCachedFeed(): CachedFeedSnapshot {
         val cachedEntities = feedDao.getAllCachedFeed()
@@ -28,7 +31,13 @@ class FeedRepository(
     }
 
     suspend fun loadFeedPage(page: Int, pageSize: Int): List<FeedItem> {
-        val items = fakeFeedRepository.loadFeedPage(page = page, pageSize = pageSize)
+        val pexels = pexelsRepository
+        val items = when {
+            AppConfig.dataSource == "pexels" && pexels != null ->
+                pexels.loadFeedPage(page, pageSize)
+            else ->
+                fakeFeedRepository.loadFeedPage(page = page, pageSize = pageSize)
+        }
         if (items.isNotEmpty()) {
             feedDao.insertFeedItems(
                 items.mapIndexed { index, item ->
@@ -41,6 +50,26 @@ class FeedRepository(
         }
         return items
     }
+
+    suspend fun searchVideos(keyword: String): List<VideoItem> {
+        val pexels = pexelsRepository
+        return if (AppConfig.dataSource == "pexels" && pexels != null) {
+            pexels.searchVideos(keyword)
+        } else {
+            fakeFeedRepository.searchVideos(keyword)
+        }
+    }
+
+    suspend fun findVideoIndexById(videoId: String): Int {
+        val pexels = pexelsRepository
+        return if (AppConfig.dataSource == "pexels" && pexels != null) {
+            pexels.findVideoIndexById(videoId)
+        } else {
+            fakeFeedRepository.findVideoIndexById(videoId)
+        }
+    }
+
+    // ── Entity mapping (unchanged) ──
 
     private fun FeedItem.toEntity(page: Int, cachedAt: Long): FeedEntity {
         return when (this) {
@@ -65,7 +94,6 @@ class FeedRepository(
                 page = page,
                 cachedAt = cachedAt,
             )
-
             is FeedItem.ImageText -> FeedEntity(
                 id = item.id,
                 itemType = ITEM_TYPE_IMAGE_TEXT,
@@ -111,7 +139,6 @@ class FeedRepository(
                     recommendWords = recommendWordsJson.toStringList(),
                 )
             )
-
             ITEM_TYPE_IMAGE_TEXT -> FeedItem.ImageText(
                 ImageTextItem(
                     id = id,
@@ -128,23 +155,16 @@ class FeedRepository(
                     recommendWords = recommendWordsJson.toStringList(),
                 )
             )
-
             else -> null
         }
     }
 
-    private fun List<String>.toJsonArrayString(): String {
-        return JSONArray(this).toString()
-    }
+    private fun List<String>.toJsonArrayString(): String = JSONArray(this).toString()
 
     private fun List<VideoQuality>.toQualityJsonArrayString(): String {
         val array = JSONArray()
         forEach { quality ->
-            array.put(
-                JSONObject()
-                    .put("label", quality.label)
-                    .put("url", quality.url)
-            )
+            array.put(JSONObject().put("label", quality.label).put("url", quality.url))
         }
         return array.toString()
     }

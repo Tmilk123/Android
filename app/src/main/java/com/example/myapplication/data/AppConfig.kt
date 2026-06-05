@@ -1,10 +1,45 @@
 package com.example.myapplication.data
 
+import com.example.myapplication.network.PexelsFeedRepository
+import java.io.File
+import java.util.Properties
+
 /**
- * 全局配置 — 控制数据源、功能开关
- * 生产环境中可替换为 DataStore 或远程配置
+ * 全局配置
+ *
+ * API Key 存储在 local.properties (已加入 .gitignore, 不会提交到 Git)
  */
 object AppConfig {
-    /** true = 真实素材 (Pexels/Unsplash), false = 测试假数据 */
-    var useRealData: Boolean = true
+    /** 数据源: "fake" | "verified" | "pexels" */
+    var dataSource: String = "pexels"
+
+    /** 从 local.properties 读取 Pexels API Key */
+    val pexelsApiKey: String by lazy {
+        loadApiKeyFromProperties() ?: ""
+    }
+
+    val isPexelsAvailable: Boolean
+        get() = pexelsApiKey.isNotBlank()
+
+    val pexelsRepository: PexelsFeedRepository?
+        get() = if (isPexelsAvailable) PexelsFeedRepository(pexelsApiKey) else null
+
+    private fun loadApiKeyFromProperties(): String? {
+        return try {
+            val props = Properties()
+            // Try multiple locations
+            val candidates = listOf(
+                File("local.properties"),
+                File("../local.properties"),
+                File(System.getProperty("user.dir"), "local.properties"),
+            )
+            val file = candidates.firstOrNull { it.exists() }
+            if (file != null) {
+                props.load(file.inputStream())
+                props.getProperty("pexels.api.key")?.trim()?.takeIf { it.isNotBlank() }
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
 }
