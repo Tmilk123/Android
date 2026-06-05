@@ -14,7 +14,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -55,6 +57,17 @@ fun ImageTextFeedCard(
 ) {
     val images = item.allImageUrls
     val pagerState = rememberPagerState(pageCount = { images.size.coerceAtLeast(1) })
+
+    // 多图自动翻页: 每 3 秒向左翻一页, 循环
+    if (images.size > 1) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(3000)
+                val nextPage = (pagerState.currentPage + 1) % images.size
+                pagerState.animateScrollToPage(nextPage)
+            }
+        }
+    }
 
     Box(modifier = modifier.background(Color.Black)) {
         if (images.size > 1) {

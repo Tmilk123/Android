@@ -6,16 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,17 +43,37 @@ fun FeedOverlay(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // ── Top: 搜索入口 ──
-        AppSearchBar(
-            onClick = onSearchClick,
+        // ── Top-Left: 🔍 搜索图标 + 推荐词 (同一排) ──
+        Row(
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(Alignment.TopStart)
                 .statusBarsPadding()
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        )
+                .padding(start = 14.dp, top = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // 搜索放大镜
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = "搜索",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(26.dp)
+                    .clickable { onSearchClick() },
+            )
+            // 推荐词 (同一排, 蓝色文字, 可点击)
+            recommendWords.take(5).forEach { word ->
+                Text(
+                    text = word.word,
+                    color = Color(0xFF8CB3D9),
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    modifier = Modifier.clickable { onRecommendWordClick(word.word) },
+                )
+            }
+        }
 
-        // ── Bottom Left: 作者信息 + 标题 + 话题标签 ──
+        // ── Bottom Left: 作者 + 标题 + 描述 ──
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -62,7 +81,6 @@ fun FeedOverlay(
                 .padding(start = 16.dp, end = 80.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // 作者行: @authorName + 「关注」
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -75,7 +93,6 @@ fun FeedOverlay(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                // 「关注」按钮
                 Text(
                     text = "关注",
                     color = Color.White,
@@ -89,7 +106,6 @@ fun FeedOverlay(
                 )
             }
 
-            // 标题
             Text(
                 text = title,
                 color = Color.White,
@@ -99,7 +115,6 @@ fun FeedOverlay(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // 描述
             if (description.isNotBlank()) {
                 Text(
                     text = description,
@@ -110,15 +125,9 @@ fun FeedOverlay(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
-            // 话题标签: 蓝色可点击
-            RecommendWordRow(
-                words = recommendWords,
-                onWordClick = onRecommendWordClick,
-            )
         }
 
-        // ── Bottom Right: 头像 + 互动按钮 ──
+        // ── Bottom Right: 头像 + 互动 ──
         InteractionButtons(
             authorName = authorName,
             authorAvatar = authorAvatar,

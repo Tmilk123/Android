@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
@@ -21,7 +22,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -86,7 +86,6 @@ fun FeedScreen(
     var preloadEnabled by remember { mutableStateOf(true) }
     var isLandscapeFullscreen by remember { mutableStateOf(false) }
     var useRealData by remember { mutableStateOf(AppConfig.dataSource != "fake") }
-    var selectedTab by remember { mutableIntStateOf(0) }
     playerManager.preloadEnabled = preloadEnabled
 
     // Fix status bar icons for black background (light icons)
@@ -213,7 +212,13 @@ fun FeedScreen(
                 ) { page ->
                     when (val feedItem = uiState.items[page]) {
                         is FeedItem.Video -> {
-                            Box(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .statusBarsPadding()
+                                    .navigationBarsPadding()
+                                    .background(Color.Black),
+                            ) {
                                 VideoFeedCard(
                                     item = feedItem.item,
                                     isActive = page == pagerState.currentPage,
@@ -285,22 +290,7 @@ fun FeedScreen(
                 )
             }
 
-            // ── 分类标签栏 ──
-        if (!isLandscapeFullscreen && uiState.items.isNotEmpty()) {
-            CategoryTabRow(
-                selectedIndex = selectedTab,
-                onTabSelected = { tabIndex ->
-                    selectedTab = tabIndex
-                    val category = listOf("推荐", "西瓜视频", "热点", "社会", "娱乐", "科技", "财经", "体育")[tabIndex]
-                    actualViewModel.selectCategory(category)
-                },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding(),
-            )
-        }
-
-        Column(
+            Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 58.dp, end = 12.dp),
