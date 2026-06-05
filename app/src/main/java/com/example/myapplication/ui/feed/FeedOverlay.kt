@@ -18,10 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,26 +44,16 @@ fun FeedOverlay(
     onRecommendWordClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-
     Box(modifier = modifier.fillMaxSize()) {
-        // ── Top: 分类标签栏 + 搜索入口 ──
-        Column(
+        // ── Top: 搜索入口 ──
+        AppSearchBar(
+            onClick = onSearchClick,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding(),
-        ) {
-            CategoryTabRow(
-                selectedIndex = selectedTab,
-                onTabSelected = { selectedTab = it },
-            )
-            AppSearchBar(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            )
-        }
+                .statusBarsPadding()
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+        )
 
         // ── Bottom Left: 作者信息 + 标题 + 话题标签 ──
         Column(

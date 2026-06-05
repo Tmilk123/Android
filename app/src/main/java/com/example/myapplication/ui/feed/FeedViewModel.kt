@@ -7,7 +7,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.FeedRepository
 import com.example.myapplication.model.FeedItem
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class FeedUiState(
@@ -24,30 +27,40 @@ class FeedViewModel(
         private set
 
     private var currentPage = 0
+    private var currentCategory: String = "推荐"
+    private var loadJob: Job? = null
 
     init {
         loadInitialData()
     }
 
+    /** 切换分类 → 重新加载 */
+    fun selectCategory(category: String) {
+        if (category == currentCategory) return
+        currentCategory = category
+        currentPage = 0
+        uiState = FeedUiState(isLoading = true)
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            loadNextPage()
+        }
+    }
+
     fun loadNextPageIfNeeded(currentIndex: Int) {
         val shouldLoad = currentIndex >= uiState.items.size - LOAD_MORE_THRESHOLD
         if (shouldLoad) {
-            viewModelScope.launch {
-                loadNextPage()
-            }
+            viewModelScope.launch { loadNextPage() }
         }
     }
 
     suspend fun loadUntilVideo(videoId: String): Int {
-        waitUntilIdle()
+        // 先在已加载项中查找
         findLoadedVideoIndex(videoId).takeIf { it >= 0 }?.let { return it }
 
         while (uiState.hasMore) {
             loadNextPage()
-            waitUntilIdle()
             findLoadedVideoIndex(videoId).takeIf { it >= 0 }?.let { return it }
         }
-
         return -1
     }
 
@@ -69,7 +82,7 @@ class FeedViewModel(
     }
 
     private suspend fun loadNextPage() {
-        if (uiState.isLoading || !uiState.hasMore) return
+        if (!uiState.hasMore) return
 
         uiState = uiState.copy(isLoading = true)
         val nextPage = currentPage + 1
@@ -83,19 +96,13 @@ class FeedViewModel(
         )
     }
 
-    private suspend fun waitUntilIdle() {
-        while (uiState.isLoading) {
-            delay(50)
-        }
-    }
-
     private fun findLoadedVideoIndex(videoId: String): Int {
         return uiState.items.indexOfFirst { item ->
             item is FeedItem.Video && item.item.id == videoId
         }
     }
 
-    private companion object {
+    companion object {
         const val PAGE_SIZE = 5
         const val LOAD_MORE_THRESHOLD = 2
     }
