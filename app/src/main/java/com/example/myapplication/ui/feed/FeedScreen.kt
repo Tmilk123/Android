@@ -70,7 +70,15 @@ fun FeedScreen(
             )
         )
     }
-    val playerManager = remember { PlayerManager(context, metricsRepository) }
+    val playerManager = remember {
+        PlayerManager(
+            context = context,
+            metricsRepository = metricsRepository,
+            onVideoUrlExpired = { videoId ->
+                actualViewModel.repository.refreshVideoUrl(videoId)
+            },
+        )
+    }
     val recommendWordEngine = remember { RecommendWordEngine() }
     val uiState = actualViewModel.uiState
     val pagerState = rememberPagerState(pageCount = { uiState.items.size })

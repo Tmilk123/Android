@@ -20,7 +20,7 @@ data class FeedUiState(
 )
 
 class FeedViewModel(
-    private val repository: FeedRepository,
+    val repository: FeedRepository,
 ) : ViewModel() {
 
     var uiState by mutableStateOf(FeedUiState(isLoading = true))

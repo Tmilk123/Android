@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 class PlayerManager(
     context: Context,
     private val metricsRepository: MetricsRepository? = null,
+    private val onVideoUrlExpired: (suspend (String) -> VideoItem?)? = null,
 ) {
 
     private val appContext = context.applicationContext
@@ -93,6 +94,21 @@ class PlayerManager(
             )
             if (canRetry) {
                 scheduleRetry()
+            } else {
+                // 可能是 URL 过期 → 尝试刷新
+                val videoId = currentVideoId
+                val handler = onVideoUrlExpired
+                if (videoId != null && handler != null) {
+                    metricsScope.launch {
+                        Log.d(TAG, "URL may be expired, refreshing: $videoId")
+                        val refreshed = handler(videoId)
+                        if (refreshed != null) {
+                            Log.d(TAG, "URL refreshed, retrying playback")
+                            retryCount = 0
+                            play(refreshed)
+                        }
+                    }
+                }
             }
         }
     }

@@ -60,6 +60,11 @@ class FeedRepository(
         }
     }
 
+    suspend fun refreshVideoUrl(videoId: String): VideoItem? {
+        val pexels = pexelsRepository ?: return null
+        return pexels.refreshVideoUrl(videoId)
+    }
+
     suspend fun findVideoIndexById(videoId: String): Int {
         val pexels = pexelsRepository
         return if (AppConfig.dataSource == "pexels" && pexels != null) {
