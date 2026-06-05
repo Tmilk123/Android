@@ -73,6 +73,7 @@ fun FeedScreen(
     val pagerState = rememberPagerState(pageCount = { uiState.items.size })
     var showDebugMetrics by remember { mutableStateOf(false) }
     var preloadEnabled by remember { mutableStateOf(true) }
+    var isLandscapeFullscreen by remember { mutableStateOf(false) }
     playerManager.preloadEnabled = preloadEnabled
 
     // Fix status bar icons for black background (light icons)
@@ -201,23 +202,29 @@ fun FeedScreen(
                                     item = feedItem.item,
                                     isActive = page == pagerState.currentPage,
                                     playerManager = playerManager,
+                                    isLandscapeFullscreen = isLandscapeFullscreen,
+                                    onLandscapeToggle = { landscape ->
+                                        isLandscapeFullscreen = landscape
+                                    },
                                     modifier = Modifier.fillMaxSize(),
                                 )
-                                FeedOverlay(
-                                    authorName = feedItem.item.authorName,
-                                    authorAvatar = feedItem.item.authorAvatar,
-                                    title = feedItem.item.title,
-                                    description = feedItem.item.description,
-                                    likeCount = feedItem.item.likeCount,
-                                    commentCount = feedItem.item.commentCount,
-                                    collectCount = feedItem.item.collectCount,
-                                    shareCount = feedItem.item.shareCount,
-                                    recommendWords = recommendWordEngine.buildRecommendWords(feedItem),
-                                    onSearchClick = onSearchClick,
-                                    onRecommendWordClick = { word ->
-                                        onRecommendWordClick(Uri.encode(word))
-                                    },
-                                )
+                                if (!isLandscapeFullscreen) {
+                                    FeedOverlay(
+                                        authorName = feedItem.item.authorName,
+                                        authorAvatar = feedItem.item.authorAvatar,
+                                        title = feedItem.item.title,
+                                        description = feedItem.item.description,
+                                        likeCount = feedItem.item.likeCount,
+                                        commentCount = feedItem.item.commentCount,
+                                        collectCount = feedItem.item.collectCount,
+                                        shareCount = feedItem.item.shareCount,
+                                        recommendWords = recommendWordEngine.buildRecommendWords(feedItem),
+                                        onSearchClick = onSearchClick,
+                                        onRecommendWordClick = { word ->
+                                            onRecommendWordClick(Uri.encode(word))
+                                        },
+                                    )
+                                }
                             }
                         }
 
@@ -227,7 +234,8 @@ fun FeedScreen(
                                     item = feedItem.item,
                                     modifier = Modifier.fillMaxSize(),
                                 )
-                                FeedOverlay(
+                                if (!isLandscapeFullscreen) {
+                                    FeedOverlay(
                                     authorName = feedItem.item.authorName,
                                     authorAvatar = feedItem.item.authorAvatar,
                                     title = feedItem.item.title,
@@ -242,6 +250,7 @@ fun FeedScreen(
                                         onRecommendWordClick(Uri.encode(word))
                                     },
                                 )
+                                } // end if (!isLandscapeFullscreen)
                             }
                         }
                     }
@@ -249,17 +258,18 @@ fun FeedScreen(
             }
         }
 
-        if (uiState.isLoading && uiState.items.isNotEmpty()) {
-            Text(
-                text = "加载中...",
-                color = Color.White.copy(alpha = 0.86f),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp),
-            )
-        }
+        if (!isLandscapeFullscreen) {
+            if (uiState.isLoading && uiState.items.isNotEmpty()) {
+                Text(
+                    text = "加载中...",
+                    color = Color.White.copy(alpha = 0.86f),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp),
+                )
+            }
 
-        Column(
+            Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 58.dp, end = 12.dp),
@@ -274,15 +284,16 @@ fun FeedScreen(
             )
         }
 
-        if (showDebugMetrics) {
-            PlaybackMetricsPanel(
-                metrics = playerManager.getPlaybackMetrics(),
-                onViewMoreClick = onMetricsClick,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 96.dp, end = 12.dp),
-            )
-        }
+            if (showDebugMetrics) {
+                PlaybackMetricsPanel(
+                    metrics = playerManager.getPlaybackMetrics(),
+                    onViewMoreClick = onMetricsClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 96.dp, end = 12.dp),
+                )
+            }
+        } // end if (!isLandscapeFullscreen)
     }
 }
 

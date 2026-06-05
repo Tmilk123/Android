@@ -66,6 +66,8 @@ fun VideoFeedCard(
     item: VideoItem,
     isActive: Boolean,
     playerManager: PlayerManager,
+    isLandscapeFullscreen: Boolean = false,
+    onLandscapeToggle: ((Boolean) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val playerState = playerManager.state
@@ -75,11 +77,17 @@ fun VideoFeedCard(
         context.findActivity()?.let { FullscreenController(it) }
     }
     var isQualityMenuOpen by remember(item.id) { mutableStateOf(false) }
-    var isLandscapeFullscreen by remember(item.id) { mutableStateOf(false) }
+    // Use external state if provided, otherwise internal
+    var internalLandscape by remember(item.id) { mutableStateOf(false) }
+    val inLandscape = if (onLandscapeToggle != null) isLandscapeFullscreen else internalLandscape
+    val toggleLandscape: (Boolean) -> Unit = onLandscapeToggle ?: { internalLandscape = it }
 
     // Show play/pause indicator briefly after state change
     var showPlayIndicator by remember { mutableStateOf(false) }
     var lastPlayingState by remember { mutableStateOf(false) }
+
+    // Auto-hide controls in landscape
+    var showLandscapeControls by remember { mutableStateOf(false) }
 
     LaunchedEffect(isActive, item.videoUrl) {
         if (isActive) {
@@ -153,20 +161,22 @@ fun VideoFeedCard(
             }
         }
 
-        // ── Layer 3: Gradient overlay ──
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.20f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.74f),
+        // ── Layer 3: Gradient overlay (hidden in landscape) ──
+        if (!inLandscape) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.20f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.74f),
+                            )
                         )
                     )
-                )
-        )
+            )
+        }
 
         // ── Layer 4: Loading / Error / Play indicator ──
         when {
@@ -203,8 +213,8 @@ fun VideoFeedCard(
             }
         }
 
-        // ── Layer 5: Duration badge (on inactive pages) ──
-        if (!isActive && item.durationText.isNotBlank()) {
+        // ── Layer 5: Duration badge (on inactive pages, hidden in landscape) ──
+        if (!isActive && !inLandscape && item.durationText.isNotBlank()) {
             Text(
                 text = item.durationText,
                 color = Color.White,
@@ -221,24 +231,103 @@ fun VideoFeedCard(
 
         // ── Layer 6: Controls (only on current video) ──
         if (isCurrentVideo) {
-            // Landscape toggle
-            if (isLandscapeFullscreen) {
-                Text(
-                    text = "返回竖屏",
-                    color = Color.White,
-                    fontSize = 13.sp,
+            if (inLandscape) {
+                // ═══ LANDSCAPE: minimal immersive UI ═══
+                // Tap anywhere to toggle controls visibility
+                Box(
                     modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(top = 24.dp, start = 16.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Black.copy(alpha = 0.52f))
-                        .clickable {
-                            isLandscapeFullscreen = false
-                            fullscreenController?.exitLandscapeFullscreen()
-                        }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { showLandscapeControls = !showLandscapeControls },
                 )
+
+                // Auto-hide controls after 3s
+                LaunchedEffect(showLandscapeControls) {
+                    if (showLandscapeControls) {
+                        delay(3000)
+                        showLandscapeControls = false
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = showLandscapeControls,
+                    enter = fadeIn(tween(200)),
+                    exit = fadeOut(tween(200)),
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        // Exit fullscreen (top left)
+                        Text(
+                            text = "← 返回",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(top = 16.dp, start = 12.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .clickable {
+                                    showLandscapeControls = false
+                                    toggleLandscape(false)
+                                    fullscreenController?.exitLandscapeFullscreen()
+                                }
+                                .padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
+
+                        // Quality selector (top right, if available)
+                        if (item.qualityUrls.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 16.dp, end = 12.dp),
+                            ) {
+                                Text(
+                                    text = playerState.qualityLabel ?: item.qualityUrls.first().label,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color.Black.copy(alpha = 0.55f))
+                                        .clickable { isQualityMenuOpen = true }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                )
+                                DropdownMenu(
+                                    expanded = isQualityMenuOpen,
+                                    onDismissRequest = { isQualityMenuOpen = false },
+                                ) {
+                                    item.qualityUrls.forEach { quality ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = if (quality.label == playerState.qualityLabel)
+                                                        "● ${quality.label}" else "  ${quality.label}"
+                                                )
+                                            },
+                                            onClick = {
+                                                isQualityMenuOpen = false
+                                                playerManager.switchQuality(item, quality.label)
+                                            },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Minimal progress bar (bottom)
+                        PlaybackProgress(
+                            positionMs = playerState.positionMs,
+                            durationMs = playerState.durationMs,
+                            onSeek = playerManager::seekTo,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(horizontal = 24.dp, vertical = 12.dp),
+                        )
+                    }
+                }
             } else {
+                // ═══ PORTRAIT: standard controls ═══
+                // Landscape toggle
                 Text(
                     text = "⛶ 横屏",
                     color = Color.White,
@@ -249,62 +338,62 @@ fun VideoFeedCard(
                         .clip(RoundedCornerShape(14.dp))
                         .background(Color.Black.copy(alpha = 0.48f))
                         .clickable {
-                            isLandscapeFullscreen = true
+                            toggleLandscape(true)
                             fullscreenController?.enterLandscapeFullscreen()
                         }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 )
-            }
 
-            // Quality selector
-            if (item.qualityUrls.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 108.dp, end = 12.dp),
-                ) {
-                    Text(
-                        text = playerState.qualityLabel ?: item.qualityUrls.first().label,
-                        color = Color.White,
-                        fontSize = 13.sp,
+                // Quality selector
+                if (item.qualityUrls.isNotEmpty()) {
+                    Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color.Black.copy(alpha = 0.48f))
-                            .clickable { isQualityMenuOpen = true }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    )
-                    DropdownMenu(
-                        expanded = isQualityMenuOpen,
-                        onDismissRequest = { isQualityMenuOpen = false },
+                            .align(Alignment.TopEnd)
+                            .padding(top = 108.dp, end = 12.dp),
                     ) {
-                        item.qualityUrls.forEach { quality ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = if (quality.label == playerState.qualityLabel)
-                                            "● ${quality.label}" else "  ${quality.label}"
-                                    )
-                                },
-                                onClick = {
-                                    isQualityMenuOpen = false
-                                    playerManager.switchQuality(item, quality.label)
-                                },
-                            )
+                        Text(
+                            text = playerState.qualityLabel ?: item.qualityUrls.first().label,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color.Black.copy(alpha = 0.48f))
+                                .clickable { isQualityMenuOpen = true }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                        DropdownMenu(
+                            expanded = isQualityMenuOpen,
+                            onDismissRequest = { isQualityMenuOpen = false },
+                        ) {
+                            item.qualityUrls.forEach { quality ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = if (quality.label == playerState.qualityLabel)
+                                                "● ${quality.label}" else "  ${quality.label}"
+                                        )
+                                    },
+                                    onClick = {
+                                        isQualityMenuOpen = false
+                                        playerManager.switchQuality(item, quality.label)
+                                    },
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Progress bar
-            PlaybackProgress(
-                positionMs = playerState.positionMs,
-                durationMs = playerState.durationMs,
-                onSeek = playerManager::seekTo,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
-            )
+                // Progress bar
+                PlaybackProgress(
+                    positionMs = playerState.positionMs,
+                    durationMs = playerState.durationMs,
+                    onSeek = playerManager::seekTo,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
+                )
+            }
         }
     }
 }
