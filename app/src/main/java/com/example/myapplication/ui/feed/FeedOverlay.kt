@@ -6,11 +6,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -43,37 +47,20 @@ fun FeedOverlay(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // ── Top-Left: 🔍 搜索图标 + 推荐词 (同一排) ──
-        Row(
+        // ── Top-Left: 🔍 搜索图标 ──
+        Icon(
+            imageVector = Icons.Filled.Search,
+            contentDescription = "搜索",
+            tint = Color.White,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .statusBarsPadding()
-                .padding(start = 14.dp, top = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // 搜索放大镜
-            Icon(
-                imageVector = Icons.Filled.Search,
-                contentDescription = "搜索",
-                tint = Color.White,
-                modifier = Modifier
-                    .size(26.dp)
-                    .clickable { onSearchClick() },
-            )
-            // 推荐词 (同一排, 蓝色文字, 可点击)
-            recommendWords.take(5).forEach { word ->
-                Text(
-                    text = word.word,
-                    color = Color(0xFF8CB3D9),
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    modifier = Modifier.clickable { onRecommendWordClick(word.word) },
-                )
-            }
-        }
+                .padding(start = 14.dp, top = 10.dp)
+                .size(26.dp)
+                .clickable { onSearchClick() },
+        )
 
-        // ── Bottom Left: 作者 + 标题 + 描述 ──
+        // ── Bottom Left: 作者 + 标题 + 描述 + 相关搜索 ──
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -124,6 +111,31 @@ fun FeedOverlay(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+
+            // ── 相关搜索 ──
+            if (recommendWords.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "— 相关搜索 —",
+                    color = Color.White.copy(alpha = 0.55f),
+                    fontSize = 12.sp,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    recommendWords.take(5).forEach { word ->
+                        Text(
+                            text = word.word,
+                            color = Color(0xFF8CB3D9),
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            modifier = Modifier.clickable { onRecommendWordClick(word.word) },
+                        )
+                    }
+                }
             }
         }
 
