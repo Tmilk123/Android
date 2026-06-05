@@ -5,201 +5,188 @@ import com.example.myapplication.model.ImageTextItem
 import com.example.myapplication.model.VideoItem
 
 /**
- * 真实素材数据源
+ * 已验证的真实视频素材数据源
  *
- * 视频来自:
- *   - Pexels (pexels.com) — 免费素材视频, 需 API Key 或直接用 CDN 链接
- *   - Coverr (coverr.co) — 免费素材视频, 无需署名
- *   - Mixkit (mixkit.co) — 免费素材视频
+ * 所有 URL 均通过 HTTP 200 验证 (2026-06-05)
  *
- * 图片来自:
- *   - Unsplash (unsplash.com) — 免费高清图片
+ * 视频来源:
+ *   - W3.org 官方测试视频 (Sintel, Bunny)
+ *   - MDN Mozilla (Flower)
+ *   - W3Schools (Big Buck Bunny)
+ *   - VideoJS CDN (Oceans)
+ *   - dl6.webmfiles.org (Big Buck Bunny trailer webm)
+ *   - filesamples.com, freetestdata.com, samplelib.com (通用样片)
  *
- * 头像来自:
- *   - UI-Avatars (ui-avatars.com) — 根据名字生成头像
+ * 如需真实 Pexels 视频: 注册免费 API Key → https://www.pexels.com/api/
  *
- * 用法:
- *   在 FakeFeedRepository 同目录下, 通过 AppConfig.useRealData = true 切换
+ * 图片来源: Unsplash (unsplash.com) — 免费商用, 无需 API Key
+ * 头像来源: UI-Avatars (ui-avatars.com) — 根据名字生成
  */
 object RealVideoDataSource {
 
-    /**
-     * 真实视频列表 — 使用公开 CDN 上的免费素材视频
-     * 每个视频匹配中文本地化元数据
-     */
     val videos: List<VideoItem> = listOf(
-        // ── Pexels 免费视频 (无需 API Key, CDN 直链) ──
         VideoItem(
-            id = "real_nature_01",
-            title = "山间溪流与森林",
-            description = "清澈的山泉流过青苔覆盖的岩石，阳光穿透树叶洒在水面上。",
-            authorName = "自然记录者",
-            authorAvatar = "https://ui-avatars.com/api/?name=自然记录者&background=D81E06&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/3194277/3194277-hd_1920_1080_25fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=720&h=1280&fit=crop",
-            durationText = "00:28",
-            likeCount = "8.2万",
-            commentCount = "2100",
-            collectCount = "1.5万",
-            shareCount = "1800",
-            tags = listOf("自然", "风景"),
-            recommendWords = listOf("森林浴", "山间徒步", "自然白噪音")
-        ),
-        VideoItem(
-            id = "real_city_02",
-            title = "上海外滩夜景延时",
-            description = "夜幕降临，陆家嘴摩天楼的灯光倒映在黄浦江上。",
-            authorName = "城市光影",
-            authorAvatar = "https://ui-avatars.com/api/?name=城市光影&background=E13B3C&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/3129957/3129957-hd_1920_1080_30fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1537531383496-f4749b88b535?w=720&h=1280&fit=crop",
-            durationText = "00:20",
-            likeCount = "15.6万",
-            commentCount = "5400",
-            collectCount = "3.2万",
-            shareCount = "4200",
-            tags = listOf("城市", "夜景"),
-            recommendWords = listOf("外滩", "魔都夜景", "城市风光", "延时摄影")
-        ),
-        VideoItem(
-            id = "real_food_03",
-            title = "手工咖啡拉花制作",
-            description = "咖啡师用细腻的奶泡在浓缩咖啡上画出精美的叶片图案。",
-            authorName = "咖啡日常",
-            authorAvatar = "https://ui-avatars.com/api/?name=咖啡日常&background=6B4F4F&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/4790449/4790449-hd_1920_1080_24fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=720&h=1280&fit=crop",
-            durationText = "00:15",
-            likeCount = "6.8万",
-            commentCount = "1800",
-            collectCount = "2.1万",
-            shareCount = "960",
-            tags = listOf("美食", "咖啡"),
-            recommendWords = listOf("拉花教程", "手冲咖啡", "咖啡文化")
-        ),
-
-        // ── Coverr 免费视频 ──
-        VideoItem(
-            id = "real_tech_04",
-            title = "程序员深夜写代码",
-            description = "键盘敲击声和显示器的蓝光，记录一个普通的编程之夜。",
-            authorName = "码农日记",
-            authorAvatar = "https://ui-avatars.com/api/?name=码农日记&background=2196F3&color=fff&size=150",
-            videoUrl = "https://cdn.coverr.co/videos/coverr-typing-on-computer-1584/1080p.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=720&h=1280&fit=crop",
-            durationText = "00:23",
-            likeCount = "4.5万",
-            commentCount = "1200",
-            collectCount = "8900",
-            shareCount = "670",
-            tags = listOf("科技", "编程"),
-            recommendWords = listOf("程序员日常", "深夜编程", "效率工具")
-        ),
-        VideoItem(
-            id = "real_sports_05",
-            title = "晨跑第一缕阳光",
-            description = "清晨6点的城市公园，脚步声和鸟鸣交织。",
-            authorName = "跑步者说",
-            authorAvatar = "https://ui-avatars.com/api/?name=跑步者说&background=4CAF50&color=fff&size=150",
-            videoUrl = "https://cdn.coverr.co/videos/coverr-jogging-in-the-park-5757/1080p.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=720&h=1280&fit=crop",
-            durationText = "00:18",
-            likeCount = "5.2万",
-            commentCount = "890",
-            collectCount = "1.1万",
-            shareCount = "450",
-            tags = listOf("运动", "晨跑"),
-            recommendWords = listOf("晨跑打卡", "公园跑步", "健康生活")
-        ),
-        VideoItem(
-            id = "real_travel_06",
-            title = "海浪拍打礁石",
-            description = "大西洋的海风呼啸，白色的浪花不断冲击着古老的礁石海岸。",
-            authorName = "旅途摄影",
-            authorAvatar = "https://ui-avatars.com/api/?name=旅途摄影&background=FF9800&color=fff&size=150",
-            videoUrl = "https://cdn.coverr.co/videos/coverr-waves-crashing-on-rocks-3456/1080p.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720&h=1280&fit=crop",
-            durationText = "00:25",
-            likeCount = "12.3万",
-            commentCount = "3600",
+            id = "real_sintel_01",
+            title = "寻龙记 — 动画短片精选",
+            description = "小女孩在雪地中发现受伤的龙宝宝，展开一段奇幻冒险。",
+            authorName = "动画放映厅",
+            authorAvatar = "https://ui-avatars.com/api/?name=动画放映厅&background=D81E06&color=fff&size=150",
+            videoUrl = "https://media.w3.org/2010/05/sintel/trailer.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=720&h=1280&fit=crop",
+            durationText = "00:52",
+            likeCount = "13.5万",
+            commentCount = "4200",
             collectCount = "2.8万",
-            shareCount = "2100",
-            tags = listOf("旅行", "海洋"),
-            recommendWords = listOf("海边度假", "海浪声", "自然风光")
-        ),
-
-        // ── 更多 Pexels 视频 ──
-        VideoItem(
-            id = "real_music_07",
-            title = "街头艺人吉他弹唱",
-            description = "繁忙的商业街上，一位歌手用吉他唱着自己写的歌。",
-            authorName = "街声日记",
-            authorAvatar = "https://ui-avatars.com/api/?name=街声日记&background=9C27B0&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/3192868/3192868-hd_1920_1080_25fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=720&h=1280&fit=crop",
-            durationText = "00:22",
-            likeCount = "7.1万",
-            commentCount = "1900",
-            collectCount = "9600",
-            shareCount = "1200",
-            tags = listOf("音乐", "街头"),
-            recommendWords = listOf("街头表演", "民谣吉他", "原创音乐")
+            shareCount = "3100",
+            tags = listOf("动画", "短片"),
+            recommendWords = listOf("动画电影", "CG短片", "奇幻冒险")
         ),
         VideoItem(
-            id = "real_pet_08",
-            title = "猫咪的慵懒午后",
-            description = "橘猫趴在窗台上，阳光洒在它柔软的毛发上。",
-            authorName = "喵星人日常",
-            authorAvatar = "https://ui-avatars.com/api/?name=喵星人日常&background=FF5722&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/4842506/4842506-hd_1920_1080_24fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=720&h=1280&fit=crop",
-            durationText = "00:17",
-            likeCount = "23.4万",
-            commentCount = "8700",
-            collectCount = "5.6万",
-            shareCount = "3400",
-            tags = listOf("宠物", "猫咪"),
-            recommendWords = listOf("治愈系", "铲屎官", "萌宠日常")
-        ),
-
-        // ── Mixkit 替代 ──
-        VideoItem(
-            id = "real_art_09",
-            title = "水墨画创作全过程",
-            description = "毛笔蘸墨，在宣纸上勾勒出山水的轮廓。一笔一画都是功夫。",
-            authorName = "墨韵轩",
-            authorAvatar = "https://ui-avatars.com/api/?name=墨韵轩&background=607D8B&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/4702603/4702603-hd_1920_1080_24fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=720&h=1280&fit=crop",
-            durationText = "00:26",
-            likeCount = "9.8万",
-            commentCount = "3200",
-            collectCount = "1.8万",
-            shareCount = "1500",
-            tags = listOf("艺术", "国画"),
-            recommendWords = listOf("传统文化", "水墨画教程", "书法艺术")
+            id = "real_bunny_02",
+            title = "兔八哥搞笑片段合集",
+            description = "机灵的小兔子用各种巧妙办法躲避猎人的追捕。",
+            authorName = "爆笑短片",
+            authorAvatar = "https://ui-avatars.com/api/?name=爆笑短片&background=FF9800&color=fff&size=150",
+            videoUrl = "https://media.w3.org/2010/05/bunny/trailer.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=720&h=1280&fit=crop",
+            durationText = "01:02",
+            likeCount = "22.1万",
+            commentCount = "8900",
+            collectCount = "5.4万",
+            shareCount = "7600",
+            tags = listOf("搞笑", "动画"),
+            recommendWords = listOf("搞笑视频", "兔八哥", "减压神器")
         ),
         VideoItem(
-            id = "real_dance_10",
-            title = "古典舞水袖表演",
-            description = "水袖飞舞，轻盈的身姿配合传统乐器演奏。",
-            authorName = "舞者日志",
-            authorAvatar = "https://ui-avatars.com/api/?name=舞者日志&background=E91E63&color=fff&size=150",
-            videoUrl = "https://videos.pexels.com/video-files/4830227/4830227-hd_1920_1080_24fps.mp4",
-            coverUrl = "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=720&h=1280&fit=crop",
-            durationText = "00:19",
+            id = "real_flower_03",
+            title = "花朵绽放 — 绝美延时摄影",
+            description = "一株兰花的完整开放过程，每一帧都是壁纸级画面。",
+            authorName = "自然之美",
+            authorAvatar = "https://ui-avatars.com/api/?name=自然之美&background=4CAF50&color=fff&size=150",
+            videoUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=720&h=1280&fit=crop",
+            durationText = "00:31",
+            likeCount = "8.9万",
+            commentCount = "2100",
+            collectCount = "3.2万",
+            shareCount = "1400",
+            tags = listOf("自然", "延时"),
+            recommendWords = listOf("延时摄影", "花开", "治愈系")
+        ),
+        VideoItem(
+            id = "real_bbb_04",
+            title = "大雄兔搞笑剧场",
+            description = "贪吃的大兔子偷吃果园果实，引发一连串爆笑事件。",
+            authorName = "搞笑笑园",
+            authorAvatar = "https://ui-avatars.com/api/?name=搞笑笑园&background=E91E63&color=fff&size=150",
+            videoUrl = "https://www.w3schools.com/html/mov_bbb.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1452570053594-1b985d6ea890?w=720&h=1280&fit=crop",
+            durationText = "00:10",
+            likeCount = "19.3万",
+            commentCount = "5600",
+            collectCount = "4.1万",
+            shareCount = "5200",
+            tags = listOf("搞笑", "动物"),
+            recommendWords = listOf("搞笑短片", "萌宠", "减压")
+        ),
+        VideoItem(
+            id = "real_ocean_05",
+            title = "深邃海洋 — 4K 高清纪录片片段",
+            description = "从珊瑚礁到深海沟，海面之下藏着另一个世界。",
+            authorName = "蓝色星球",
+            authorAvatar = "https://ui-avatars.com/api/?name=蓝色星球&background=2196F3&color=fff&size=150",
+            videoUrl = "https://vjs.zencdn.net/v/oceans.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=720&h=1280&fit=crop",
+            durationText = "00:46",
+            likeCount = "16.7万",
+            commentCount = "4800",
+            collectCount = "6.3万",
+            shareCount = "3800",
+            tags = listOf("海洋", "纪录片"),
+            recommendWords = listOf("海洋世界", "纪录片推荐", "4K视频")
+        ),
+        VideoItem(
+            id = "real_city_06",
+            title = "城市街头 — 慢镜头实拍",
+            description = "雨后的街道倒映着霓虹灯，行人匆匆而过。",
+            authorName = "街头摄影师",
+            authorAvatar = "https://ui-avatars.com/api/?name=街头摄影师&background=607D8B&color=fff&size=150",
+            videoUrl = "https://woolyss.com/f/spring-video-camera.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=720&h=1280&fit=crop",
+            durationText = "00:21",
             likeCount = "11.2万",
-            commentCount = "4100",
-            collectCount = "2.6万",
-            shareCount = "2800",
-            tags = listOf("舞蹈", "传统"),
-            recommendWords = listOf("古典舞", "水袖", "国风舞蹈")
+            commentCount = "3200",
+            collectCount = "2.1万",
+            shareCount = "1900",
+            tags = listOf("城市", "街拍"),
+            recommendWords = listOf("城市风光", "街拍", "慢镜头")
+        ),
+        VideoItem(
+            id = "real_tech_07",
+            title = "数字世界的几何之美",
+            description = "动态图形展示数学与代码交汇处的视觉盛宴。",
+            authorName = "数字艺术馆",
+            authorAvatar = "https://ui-avatars.com/api/?name=数字艺术馆&background=9C27B0&color=fff&size=150",
+            videoUrl = "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=720&h=1280&fit=crop",
+            durationText = "00:05",
+            likeCount = "5.6万",
+            commentCount = "1400",
+            collectCount = "1.8万",
+            shareCount = "870",
+            tags = listOf("科技", "艺术"),
+            recommendWords = listOf("数字艺术", "视效", "创意")
+        ),
+        VideoItem(
+            id = "real_sports_08",
+            title = "足球精彩过人集锦",
+            description = "绿茵场上的灵动脚步，一次次令人惊叹的盘带突破。",
+            authorName = "球场风云",
+            authorAvatar = "https://ui-avatars.com/api/?name=球场风云&background=795548&color=fff&size=150",
+            videoUrl = "https://filesamples.com/samples/video/mp4/sample_640x360.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=720&h=1280&fit=crop",
+            durationText = "00:15",
+            likeCount = "14.8万",
+            commentCount = "6200",
+            collectCount = "3.5万",
+            shareCount = "4100",
+            tags = listOf("运动", "足球"),
+            recommendWords = listOf("足球集锦", "过人技巧", "精彩进球")
+        ),
+        VideoItem(
+            id = "real_food_09",
+            title = "手工面包烘焙教程",
+            description = "从揉面到出炉，外酥内软的欧式面包在家也能做。",
+            authorName = "烘焙教室",
+            authorAvatar = "https://ui-avatars.com/api/?name=烘焙教室&background=FF5722&color=fff&size=150",
+            videoUrl = "https://freetestdata.com/wp-content/uploads/2022/02/Free_Test_Data_1MB_MP4.mp4",
+            coverUrl = "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=720&h=1280&fit=crop",
+            durationText = "00:08",
+            likeCount = "7.3万",
+            commentCount = "2800",
+            collectCount = "2.4万",
+            shareCount = "1100",
+            tags = listOf("美食", "烘焙"),
+            recommendWords = listOf("烘焙教程", "面包", "手工美食")
+        ),
+        VideoItem(
+            id = "real_travel_10",
+            title = "桂林山水甲天下",
+            description = "漓江竹筏漂流，看喀斯特峰林在晨雾中若隐若现。",
+            authorName = "在路上旅拍",
+            authorAvatar = "https://ui-avatars.com/api/?name=在路上旅拍&background=009688&color=fff&size=150",
+            videoUrl = "https://dl6.webmfiles.org/big-buck-bunny_trailer.webm",
+            coverUrl = "https://images.unsplash.com/photo-1528127269322-539801943592?w=720&h=1280&fit=crop",
+            durationText = "00:33",
+            likeCount = "20.5万",
+            commentCount = "7400",
+            collectCount = "5.8万",
+            shareCount = "4900",
+            tags = listOf("旅行", "桂林"),
+            recommendWords = listOf("桂林旅游", "漓江", "山水风光", "国内游")
         ),
     )
 
-    /**
-     * 真实图文数据 — 使用 Unsplash 高质量图片
-     */
     val imageTexts: List<ImageTextItem> = listOf(
         ImageTextItem(
             id = "real_image_01",
@@ -260,7 +247,6 @@ object RealVideoDataSource {
         ),
     )
 
-    /** 将真实视频转为 FeedItem 列表 */
     fun toFeedItems(videoCount: Int = 10, imageCount: Int = 3): List<FeedItem> {
         val items = mutableListOf<FeedItem>()
         videos.take(videoCount).forEach { items.add(FeedItem.Video(it)) }
