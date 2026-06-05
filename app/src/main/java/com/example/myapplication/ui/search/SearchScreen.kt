@@ -48,6 +48,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.SearchHistoryRepository
+import com.example.myapplication.data.SearchSuggestionEngine
 import com.example.myapplication.database.AppDatabase
 import kotlinx.coroutines.delay
 
@@ -66,6 +67,11 @@ fun SearchScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     var keyword by remember { mutableStateOf("") }
+    val suggestionEngine = remember { SearchSuggestionEngine() }
+    val suggestions = remember(keyword) {
+        suggestionEngine.suggest(keyword).take(8)
+    }
+    val hasSuggestions = keyword.isNotBlank() && suggestions.isNotEmpty()
 
     fun submit(input: String) {
         val savedKeyword = actualViewModel.submitSearch(input) ?: return
@@ -139,35 +145,78 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ── 热门搜索 ──
-        Text(
-            text = "热门搜索",
-            color = Color(0xFF222222),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-        ) {
-            listOf("今日头条" to "1", "旅行攻略" to "2", "美食探店" to "3", "城市漫步" to "4", "科技数码" to "5", "电影推荐" to "6")
-                .forEach { (word, rank) ->
+        // ── 搜索联想 / 热门搜索 ──
+        if (hasSuggestions) {
+            // 正在输入 → 显示实时联想
+            Text(
+                text = "搜索联想",
+                color = Color(0xFF222222),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+            ) {
+                items(suggestions) { suggestion ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { submit(word) }
+                            .clickable { submit(suggestion.word) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color(0xFF999999),
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                        Text(
+                            text = suggestion.word,
+                            color = Color(0xFF333333),
+                            fontSize = 15.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = suggestion.source,
+                            color = Color(0xFFBBBBBB),
+                            fontSize = 11.sp,
+                        )
+                    }
+                    HorizontalDivider(color = Color(0xFFF0F0F0))
+                }
+            }
+        } else {
+            // 无输入 → 显示热门搜索
+            Text(
+                text = "热门搜索",
+                color = Color(0xFF222222),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                suggestionEngine.hotSearchWords(6).forEachIndexed { index, term ->
+                    val rank = (index + 1).toString()
+                    val rankColor = when (rank) {
+                        "1" -> Color(0xFFD81E06)
+                        "2" -> Color(0xFFFF6B35)
+                        "3" -> Color(0xFFFFB347)
+                        else -> Color(0xFF999999)
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { submit(term.word) }
                             .padding(vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        val rankColor = when (rank) {
-                            "1" -> Color(0xFFD81E06)
-                            "2" -> Color(0xFFFF6B35)
-                            "3" -> Color(0xFFFFB347)
-                            else -> Color(0xFF999999)
-                        }
                         Text(
                             text = rank,
                             color = rankColor,
@@ -177,13 +226,14 @@ fun SearchScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = word,
+                            text = term.word,
                             color = Color(0xFF333333),
                             fontSize = 14.sp,
                             modifier = Modifier.weight(1f),
                         )
                     }
                 }
+            }
         }
 
         HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(vertical = 8.dp))
