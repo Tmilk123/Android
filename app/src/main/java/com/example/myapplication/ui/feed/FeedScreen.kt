@@ -85,7 +85,6 @@ fun FeedScreen(
     var showDebugMetrics by remember { mutableStateOf(false) }
     var preloadEnabled by remember { mutableStateOf(true) }
     var isLandscapeFullscreen by remember { mutableStateOf(false) }
-    var useRealData by remember { mutableStateOf(AppConfig.dataSource != "fake") }
     playerManager.preloadEnabled = preloadEnabled
 
     // Fix status bar icons for black background (light icons)
@@ -303,18 +302,6 @@ fun FeedScreen(
                 preloadEnabled = preloadEnabled,
                 onToggle = { preloadEnabled = !preloadEnabled },
             )
-            DataSourceToggle(
-                useRealData = useRealData,
-                onToggle = {
-                    // 循环: fake → verified → pexels → fake
-                    AppConfig.dataSource = when (AppConfig.dataSource) {
-                        "fake" -> "verified"
-                        "verified" -> "pexels"
-                        else -> "fake"
-                    }
-                    useRealData = AppConfig.dataSource != "fake"
-                },
-            )
         }
 
             if (showDebugMetrics) {
@@ -339,33 +326,6 @@ private fun MetricsDebugToggle(
     Text(
         text = if (showDebugMetrics) "隐藏指标" else "起播指标",
         color = Color.White,
-        fontSize = 12.sp,
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.48f))
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
-}
-
-@Composable
-private fun DataSourceToggle(
-    useRealData: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val label = when (AppConfig.dataSource) {
-        "pexels" -> "素材: Pexels"
-        "verified" -> "素材: 已验证"
-        else -> "素材: 测试"
-    }
-    val toggleColor = when (AppConfig.dataSource) {
-        "pexels" -> Color(0xFF4CAF50)
-        "verified" -> Color(0xFF2196F3)
-        else -> Color(0xFFFF9800)
-    }
-    Text(
-        text = label,
-        color = toggleColor,
         fontSize = 12.sp,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.48f))

@@ -130,28 +130,24 @@ fun VideoFeedCard(
                 enabled = isActive
             ) { playerManager.togglePlayPause() },
     ) {
-        // ── Layer 1: Cover image (always visible underneath) ──
-        AsyncImage(
-            model = item.coverUrl,
-            contentDescription = item.title,
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(if (videoReady) 0f else 1f),
-            contentScale = ContentScale.Crop,
-        )
+        // ── Layer 1: Black background (no cover image) ──
 
-        // ── Layer 2: Video surface (fades in when ready) ──
+        // ── Layer 2: Video surface ──
         if (isActive) {
             AnimatedVisibility(
                 visible = videoReady,
-                enter = fadeIn(animationSpec = tween(300)),
+                enter = fadeIn(animationSpec = tween(200)),
                 exit = fadeOut(),
             ) {
                 AndroidView(
                     factory = { ctx ->
                         PlayerView(ctx).apply {
                             useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            // 横屏时 ZOOM 填满屏幕, 竖屏时 FIT 留黑边
+                            resizeMode = if (inLandscape)
+                                AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            else
+                                AspectRatioFrameLayout.RESIZE_MODE_FIT
                             player = playerManager.player
                         }
                     },
