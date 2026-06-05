@@ -120,11 +120,14 @@ fun FeedScreen(
         val currentItem = uiState.items.getOrNull(pagerState.currentPage)
         when (currentItem) {
             is FeedItem.Video -> {
+                // 双向预加载: 优先下一个, 其次上一个
                 val nextItem = uiState.items.getOrNull(pagerState.currentPage + 1)
                 if (nextItem is FeedItem.Video) {
                     playerManager.preloadNext(nextItem.item)
-                } else {
-                    playerManager.clearPreload()
+                }
+                val prevItem = uiState.items.getOrNull(pagerState.currentPage - 1)
+                if (prevItem is FeedItem.Video) {
+                    playerManager.preloadPrevious(prevItem.item)
                 }
             }
 

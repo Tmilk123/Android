@@ -195,6 +195,18 @@ class PlayerManager(
 
     fun preloadNext(videoItem: VideoItem) {
         if (!preloadEnabled) return
+        preloadInternal(videoItem)
+    }
+
+    /** 预加载上一个视频 (向上滑回去时使用) */
+    fun preloadPrevious(videoItem: VideoItem) {
+        if (!preloadEnabled) return
+        // 只在没有进行中的 preload 时才预加载上一个 (优先保下一个)
+        if (preloadPlayer != null) return
+        preloadInternal(videoItem)
+    }
+
+    private fun preloadInternal(videoItem: VideoItem) {
         val targetUrl = videoItem.defaultPlaybackUrl()
         if (targetUrl == state.videoUrl || preloadVideo?.id == videoItem.id) return
 
@@ -208,10 +220,7 @@ class PlayerManager(
                     preloadReadyTimeMs = System.currentTimeMillis()
                 }
             }
-
-            override fun onPlayerError(error: PlaybackException) {
-                clearPreload()
-            }
+            override fun onPlayerError(error: PlaybackException) { clearPreload() }
         }
 
         preloadPlayer = nextPlayer

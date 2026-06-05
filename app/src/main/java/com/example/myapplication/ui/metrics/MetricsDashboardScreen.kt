@@ -121,6 +121,11 @@ fun MetricsDashboardScreen(
                 AggregateStatsCard(stats = aggregateStats)
             }
 
+            // ── 预加载 ON vs OFF 对比 ──
+            item {
+                ComparisonCard(stats = aggregateStats)
+            }
+
             item {
                 Text(
                     text = "指标说明",
@@ -333,6 +338,63 @@ private fun MetricItemCard(metric: PlaybackMetricsEntity) {
                     color = if (metric.improvementPercent >= 70) Color(0xFF4CAF50) else Color(0xFFFF9800),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ComparisonCard(stats: MetricsAggregateStats?) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text("⚡ 预加载 ON vs OFF", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF222222))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (stats == null || stats.totalCount == 0) {
+                Text("暂无数据", color = Color(0xFF999999), fontSize = 14.sp)
+                return@Column
+            }
+
+            val cold = stats.avgColdStartMs
+            val preload = stats.avgPreloadMs
+            val gap = (cold - preload).coerceAtLeast(0.0)
+            val pct = if (cold > 0) (gap / cold * 100) else 0.0
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("OFF", color = Color(0xFFFF5722), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("${String.format("%.0f", cold)} ms", color = Color(0xFFFF5722), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("→", color = Color(0xFF999999), fontSize = 18.sp, modifier = Modifier.padding(top = 10.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("ON", color = Color(0xFF4CAF50), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("${String.format("%.0f", preload)} ms", color = Color(0xFF4CAF50), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF0F0F0)))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("优化幅度", color = Color(0xFF333333), fontSize = 12.sp)
+                    Text("${String.format("%.1f", pct)}%", color = Color(0xFF4CAF50), fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("节省", color = Color(0xFF333333), fontSize = 12.sp)
+                    Text("${String.format("%.0f", gap)} ms", color = Color(0xFF2196F3), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text("≈${String.format("%.1f", gap / 1000)}s/次", color = Color(0xFF999999), fontSize = 11.sp)
+                }
+            }
+
+            Text(
+                "命中率: ${String.format("%.1f", stats.preloadHitRate)}% | 共 ${stats.totalCount} 次",
+                color = Color(0xFF999999), fontSize = 11.sp,
+            )
         }
     }
 }
