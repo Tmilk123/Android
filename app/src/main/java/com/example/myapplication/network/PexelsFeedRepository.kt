@@ -35,19 +35,32 @@ class PexelsFeedRepository(
     private val api: PexelsApi by lazy { createApi() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    data class CategoryQuery(val category: String, val query: String, val tags: List<String>)
+    data class CategoryQuery(
+        val category: String, val query: String, val tags: List<String>,
+        val title: String, val description: String,
+    )
 
     private val categoryQueries = listOf(
-        CategoryQuery("推荐", "nature scenic beautiful", listOf("自然", "风景")),
-        CategoryQuery("推荐", "city life urban", listOf("城市", "生活")),
-        CategoryQuery("热点", "travel adventure explore", listOf("旅行", "探险")),
-        CategoryQuery("热点", "drone aerial view", listOf("航拍", "风光")),
-        CategoryQuery("社会", "people street daily", listOf("社会", "街拍")),
-        CategoryQuery("娱乐", "funny cute animals", listOf("搞笑", "萌宠")),
-        CategoryQuery("娱乐", "music dance party", listOf("音乐", "舞蹈")),
-        CategoryQuery("科技", "technology coding computer", listOf("科技", "数码")),
-        CategoryQuery("体育", "sports running fitness", listOf("运动", "健身")),
-        CategoryQuery("美食", "food cooking delicious", listOf("美食", "料理")),
+        CategoryQuery("推荐", "mountain forest river scenic", listOf("自然", "风景"),
+            "山林河流风光", "航拍视角下的壮丽山河，森林与溪流交织的自然画卷。"),
+        CategoryQuery("推荐", "city street urban architecture", listOf("城市", "建筑"),
+            "现代都市建筑", "高楼林立的都市天际线，记录城市发展的每一个瞬间。"),
+        CategoryQuery("热点", "travel beach island vacation", listOf("旅行", "海岛"),
+            "海岛度假胜地", "碧海蓝天，白色沙滩，感受热带海岛的悠闲时光。"),
+        CategoryQuery("热点", "aerial drone landscape view", listOf("航拍", "风光"),
+            "航拍壮美大地", "从空中俯瞰大地，感受不一样的视觉震撼。"),
+        CategoryQuery("社会", "people crowd street market", listOf("社会", "市集"),
+            "街头市井生活", "人群中捕捉到的真实瞬间，城市的烟火气息。"),
+        CategoryQuery("娱乐", "cute funny cat dog pet", listOf("萌宠", "搞笑"),
+            "萌宠搞笑日常", "猫咪狗狗的可爱瞬间，治愈你的一天。"),
+        CategoryQuery("娱乐", "music concert dance performance", listOf("音乐", "舞蹈"),
+            "音乐舞蹈表演", "舞台上的精彩演出，感受节奏与旋律的力量。"),
+        CategoryQuery("科技", "coding programming technology office", listOf("科技", "编程"),
+            "科技办公日常", "键盘敲击中诞生的代码，数字时代的创造力。"),
+        CategoryQuery("体育", "running fitness exercise gym", listOf("运动", "健身"),
+            "运动健身时刻", "挥洒汗水的运动时光，跑步、训练、挑战自我。"),
+        CategoryQuery("美食", "food cooking kitchen delicious", listOf("美食", "烹饪"),
+            "美食烹饪艺术", "精致的食材在厨房中变成美味佳肴的过程。"),
     )
 
     private val unsplashImages = listOf(
@@ -101,7 +114,10 @@ class PexelsFeedRepository(
     suspend fun searchVideos(keyword: String): List<VideoItem> {
         return try {
             val resp = api.searchVideos(apiKey, keyword, 10)
-            resp.videos.mapIndexed { i, v -> v.toVideoItem("search", i, listOf(keyword)) }
+            resp.videos.mapIndexed { i, v -> v.toVideoItem(
+                "search", i, listOf(keyword),
+                title = "搜索: $keyword", description = "根据关键词「$keyword」搜索到的Pexels高清视频。"
+            )}
         } catch (e: Exception) { Log.w(TAG, "Search: ${e.message}"); emptyList() }
     }
 
@@ -121,7 +137,10 @@ class PexelsFeedRepository(
                 ?: resp.videos.firstOrNull()
                 ?: return null
 
-            val newVideo = fresh.toVideoItem("pexels", query.tags.hashCode(), query.tags)
+            val newVideo = fresh.toVideoItem(
+                "pexels", query.tags.hashCode(), query.tags,
+                title = query.title, description = query.description,
+            )
             // 更新缓存
             cachedVideos = cachedVideos?.map { if (it.id == videoId) newVideo else it }
             cachedFeedItems = cachedFeedItems?.map { item ->
@@ -187,7 +206,10 @@ class PexelsFeedRepository(
                     async {
                         try {
                             val resp = api.searchVideos(apiKey, cq.query, perPage = 1)
-                            resp.videos.firstOrNull()?.toVideoItem("pexels", cq.tags.hashCode(), cq.tags)
+                            resp.videos.firstOrNull()?.toVideoItem(
+                                "pexels", cq.tags.hashCode(), cq.tags,
+                                title = cq.title, description = cq.description,
+                            )
                         } catch (e: Exception) {
                             Log.w(TAG, "'${cq.query}' failed: ${e.message}")
                             null
@@ -228,7 +250,10 @@ class PexelsFeedRepository(
 
     // ── Mapping ──
 
-    private fun PexelsVideo.toVideoItem(source: String, index: Int, tags: List<String>): VideoItem {
+    private fun PexelsVideo.toVideoItem(
+        source: String, index: Int, tags: List<String>,
+        title: String, description: String,
+    ): VideoItem {
         val best = videoFiles.filter { it.fileType == "video/mp4" }
             .maxByOrNull { it.width * it.height } ?: videoFiles.firstOrNull()
         val author = user.name.ifBlank { "Pexels 创作者" }
@@ -236,8 +261,8 @@ class PexelsFeedRepository(
 
         return VideoItem(
             id = "${source}_${id}",
-            title = "${tags.firstOrNull() ?: "精彩"}瞬间",
-            description = "Pexels 创作者 $author 的高清素材。",
+            title = title,
+            description = description,
             authorName = author,
             authorAvatar = "https://ui-avatars.com/api/?name=$initials&background=D81E06&color=fff&size=150",
             videoUrl = best?.link.orEmpty(),
