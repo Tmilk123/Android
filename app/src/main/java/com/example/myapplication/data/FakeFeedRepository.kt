@@ -5,9 +5,19 @@ import com.example.myapplication.model.ImageTextItem
 import com.example.myapplication.model.VideoQuality
 import com.example.myapplication.model.VideoItem
 
-class FakeFeedRepository {
+class FakeFeedRepository(
+    val useRealData: Boolean = false,
+) {
 
     private val hotWords = listOf("今日头条", "旅行", "美食", "科技", "电影")
+
+    /** 真实数据源 (启用时使用) */
+    private val realFeedItems: List<FeedItem> by lazy {
+        RealVideoDataSource.toFeedItems().map { it.withExpandedRecommendWords() }
+    }
+
+    private val realVideoItems: List<VideoItem>
+        get() = realFeedItems.mapNotNull { (it as? FeedItem.Video)?.item }
 
     private val testVideoUrls = listOf(
         "https://media.w3.org/2010/05/sintel/trailer.mp4",
@@ -342,28 +352,32 @@ class FakeFeedRepository {
 
     fun loadFeedPage(page: Int, pageSize: Int): List<FeedItem> {
         if (page <= 0 || pageSize <= 0) return emptyList()
+        val items = if (useRealData) realFeedItems else feedItems
         val fromIndex = (page - 1) * pageSize
-        if (fromIndex >= feedItems.size) return emptyList()
-        return feedItems.drop(fromIndex).take(pageSize)
+        if (fromIndex >= items.size) return emptyList()
+        return items.drop(fromIndex).take(pageSize)
     }
 
     fun searchVideos(keyword: String): List<VideoItem> {
+        val videos = if (useRealData) realVideoItems else videoItems
         return SearchRanker()
-            .searchVideos(videoItems, keyword)
+            .searchVideos(videos, keyword)
             .map { it.video }
     }
 
     fun loadAllVideos(): List<VideoItem> {
-        return videoItems
+        return if (useRealData) realVideoItems else videoItems
     }
 
     fun getRecommendWords(itemId: String): List<String> {
-        val item = feedItems.firstOrNull { it.itemId == itemId } ?: return hotWords
+        val items = if (useRealData) realFeedItems else feedItems
+        val item = items.firstOrNull { it.itemId == itemId } ?: return hotWords
         return RecommendWordEngine(hotWords).buildRecommendWords(item).map { it.word }
     }
 
     fun findVideoIndexById(videoId: String): Int {
-        return videoItems.indexOfFirst { it.id == videoId }
+        val videos = if (useRealData) realVideoItems else videoItems
+        return videos.indexOfFirst { it.id == videoId }
     }
 
     private fun MutableList<String>.addUnique(words: List<String>) {

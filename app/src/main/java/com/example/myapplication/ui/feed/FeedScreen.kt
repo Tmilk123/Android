@@ -37,6 +37,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.util.UnstableApi
+import com.example.myapplication.data.AppConfig
 import com.example.myapplication.data.MetricsRepository
 import com.example.myapplication.data.FakeFeedRepository
 import com.example.myapplication.data.FeedRepository
@@ -62,7 +63,7 @@ fun FeedScreen(
         val database = AppDatabase.getDatabase(context)
         FeedViewModel(
             FeedRepository(
-                fakeFeedRepository = FakeFeedRepository(),
+                fakeFeedRepository = FakeFeedRepository(useRealData = AppConfig.useRealData),
                 feedDao = database.feedDao(),
             )
         )
@@ -74,6 +75,7 @@ fun FeedScreen(
     var showDebugMetrics by remember { mutableStateOf(false) }
     var preloadEnabled by remember { mutableStateOf(true) }
     var isLandscapeFullscreen by remember { mutableStateOf(false) }
+    var useRealData by remember { mutableStateOf(AppConfig.useRealData) }
     playerManager.preloadEnabled = preloadEnabled
 
     // Fix status bar icons for black background (light icons)
@@ -282,6 +284,14 @@ fun FeedScreen(
                 preloadEnabled = preloadEnabled,
                 onToggle = { preloadEnabled = !preloadEnabled },
             )
+            DataSourceToggle(
+                useRealData = useRealData,
+                onToggle = {
+                    useRealData = !useRealData
+                    AppConfig.useRealData = useRealData
+                    // 重新创建 ViewModel 以加载新数据源
+                },
+            )
         }
 
             if (showDebugMetrics) {
@@ -306,6 +316,23 @@ private fun MetricsDebugToggle(
     Text(
         text = if (showDebugMetrics) "隐藏指标" else "起播指标",
         color = Color.White,
+        fontSize = 12.sp,
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.48f))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+private fun DataSourceToggle(
+    useRealData: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = if (useRealData) "素材: 真实" else "素材: 测试",
+        color = if (useRealData) Color(0xFF4CAF50) else Color(0xFFFF9800),
         fontSize = 12.sp,
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.48f))
