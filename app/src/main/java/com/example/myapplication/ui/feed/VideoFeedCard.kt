@@ -196,15 +196,17 @@ fun VideoFeedCard(
             }
 
             isCurrentVideo && showPlayIndicator -> {
-                AnimatedVisibility(
-                    visible = showPlayIndicator,
-                    enter = fadeIn(tween(150)) + scaleIn,
-                    exit = fadeOut(tween(400)),
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    PlayPauseIcon(
-                        isPlaying = playerState.isPlaying,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                    AnimatedVisibility(
+                        visible = showPlayIndicator,
+                        enter = fadeIn(tween(150)) + scaleIn,
+                        exit = fadeOut(tween(400)),
+                    ) {
+                        PlayPauseIcon(isPlaying = playerState.isPlaying)
+                    }
                 }
             }
         }
