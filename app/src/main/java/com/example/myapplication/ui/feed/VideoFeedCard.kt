@@ -381,7 +381,7 @@ fun VideoFeedCard(
                     }
                 }
 
-                // Progress bar
+                // Progress bar (moved up to leave room for related search + author below)
                 PlaybackProgress(
                     positionMs = playerState.positionMs,
                     durationMs = playerState.durationMs,
@@ -389,7 +389,7 @@ fun VideoFeedCard(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
+                        .padding(start = 12.dp, end = 12.dp, bottom = 110.dp),
                 )
             }
         }
