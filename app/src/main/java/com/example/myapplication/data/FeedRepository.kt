@@ -22,11 +22,8 @@ class FeedRepository(
     private val pexelsRepository: PexelsFeedRepository?
         get() = AppConfig.pexelsRepository
 
-    // 启动时清除旧缓存，防止过期数据导致加载失败
-    init {
-        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try { feedDao.clearAll() } catch (_: Exception) {}
-        }
+    suspend fun clearFeedCache() {
+        try { feedDao.clearAll() } catch (_: Exception) {}
     }
 
     suspend fun loadCachedFeed(): CachedFeedSnapshot {

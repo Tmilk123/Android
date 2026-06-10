@@ -66,7 +66,8 @@ class FeedViewModel(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            // 始终加载最新数据 (跳过可能过期的缓存)
+            // 清除可能过期的 Room 缓存
+            try { repository.clearFeedCache() } catch (_: Exception) {}
             uiState = FeedUiState(isLoading = false)
             loadNextPage()
         }
