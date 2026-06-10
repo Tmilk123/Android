@@ -82,23 +82,7 @@ fun FeedScreen(
     val recommendWordEngine = remember { RecommendWordEngine() }
     val uiState = actualViewModel.uiState
     val pagerState = rememberPagerState(pageCount = { uiState.items.size })
-    var showDebugMetrics by remember { mutableStateOf(false) }
-    var preloadEnabled by remember { mutableStateOf(true) }
     var isLandscapeFullscreen by remember { mutableStateOf(false) }
-    playerManager.preloadEnabled = preloadEnabled
-
-    // Fix status bar icons for black background (light icons)
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val activity = view.context as? Activity ?: return@SideEffect
-            val window = activity.window
-            WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = false
-                isAppearanceLightNavigationBars = false
-            }
-        }
-    }
 
     LaunchedEffect(pagerState.currentPage, uiState.items.size) {
         if (uiState.items.isNotEmpty()) {
@@ -289,108 +273,7 @@ fun FeedScreen(
                 )
             }
 
-            Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 58.dp, end = 12.dp),
-        ) {
-            MetricsDebugToggle(
-                showDebugMetrics = showDebugMetrics,
-                onToggle = { showDebugMetrics = !showDebugMetrics },
-            )
-            PreloadToggle(
-                preloadEnabled = preloadEnabled,
-                onToggle = { preloadEnabled = !preloadEnabled },
-            )
-        }
-
-            if (showDebugMetrics) {
-                PlaybackMetricsPanel(
-                    metrics = playerManager.getPlaybackMetrics(),
-                    onViewMoreClick = onMetricsClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 96.dp, end = 12.dp),
-                )
-            }
         } // end if (!isLandscapeFullscreen)
-    }
-}
-
-@Composable
-private fun MetricsDebugToggle(
-    showDebugMetrics: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = if (showDebugMetrics) "隐藏指标" else "起播指标",
-        color = Color.White,
-        fontSize = 12.sp,
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.48f))
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
-}
-
-@Composable
-private fun PreloadToggle(
-    preloadEnabled: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = if (preloadEnabled) "预加载: ON" else "预加载: OFF",
-        color = if (preloadEnabled) Color(0xFF4CAF50) else Color(0xFFFF5722),
-        fontSize = 12.sp,
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.48f))
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
-}
-
-@Composable
-private fun PlaybackMetricsPanel(
-    metrics: PlaybackMetrics?,
-    onViewMoreClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.58f))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        if (metrics == null) {
-            Text(
-                text = "暂无起播数据",
-                color = Color.White,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-            )
-        } else {
-            Text(
-                text = """
-                预加载命中：${if (metrics.isPreloaded) "是" else "否"}
-                起播耗时：${metrics.displayStartMs} ms
-                优化幅度：${metrics.improvementPercent}%
-                """.trimIndent(),
-                color = Color.White,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-            )
-            if (onViewMoreClick != null) {
-                Text(
-                    text = "📊 更多指标 →",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 11.sp,
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .clickable(onClick = onViewMoreClick),
-                )
-            }
-        }
     }
 }
 

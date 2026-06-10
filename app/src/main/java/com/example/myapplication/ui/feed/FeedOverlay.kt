@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -46,18 +47,32 @@ fun FeedOverlay(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // ── Top-Left: 🔍 搜索图标 ──
-        Icon(
-            imageVector = Icons.Filled.Search,
-            contentDescription = "搜索",
-            tint = Color.White,
+        // ── Top: 搜索栏 ──
+        Row(
             modifier = Modifier
-                .align(Alignment.TopStart)
+                .align(Alignment.TopCenter)
                 .statusBarsPadding()
-                .padding(start = 14.dp, top = 10.dp)
-                .size(26.dp)
-                .clickable { onSearchClick() },
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .height(42.dp)
+                .clip(RoundedCornerShape(21.dp))
+                .background(Color.White.copy(alpha = 0.18f))
+                .clickable { onSearchClick() }
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = "搜索",
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = "  搜索感兴趣的视频",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 14.sp,
+            )
+        }
 
         // ── Bottom: 相关搜索 (进度条下方) → 作者 + 标题 + 描述 ──
         Column(
