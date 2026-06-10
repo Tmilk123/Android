@@ -17,4 +17,7 @@ interface FeedDao {
 
     @Query("SELECT COALESCE(MAX(page), 0) FROM feed_cache")
     suspend fun getMaxCachedPage(): Int
+
+    @Query("DELETE FROM feed_cache")
+    suspend fun clearAll()
 }

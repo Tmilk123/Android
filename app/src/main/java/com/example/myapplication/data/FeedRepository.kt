@@ -22,6 +22,13 @@ class FeedRepository(
     private val pexelsRepository: PexelsFeedRepository?
         get() = AppConfig.pexelsRepository
 
+    // 启动时清除旧缓存，防止过期数据导致加载失败
+    init {
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try { feedDao.clearAll() } catch (_: Exception) {}
+        }
+    }
+
     suspend fun loadCachedFeed(): CachedFeedSnapshot {
         val cachedEntities = feedDao.getAllCachedFeed()
         return CachedFeedSnapshot(
@@ -37,16 +44,6 @@ class FeedRepository(
                 pexels.loadFeedPage(page, pageSize)
             else ->
                 fakeFeedRepository.loadFeedPage(page = page, pageSize = pageSize)
-        }
-        if (items.isNotEmpty()) {
-            feedDao.insertFeedItems(
-                items.mapIndexed { index, item ->
-                    item.toEntity(
-                        page = page,
-                        cachedAt = System.currentTimeMillis() + index,
-                    )
-                }
-            )
         }
         return items
     }
