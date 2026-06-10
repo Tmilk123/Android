@@ -503,28 +503,51 @@ private fun PlaybackProgress(
 ) {
     val sliderMax = durationMs.coerceAtLeast(1L).toFloat()
     val sliderValue = positionMs.coerceIn(0L, durationMs.coerceAtLeast(0L)).toFloat()
+    var isExpanded by remember { mutableStateOf(false) }
+
+    // 触摸时放大, 松手后延迟缩回
+    LaunchedEffect(isExpanded) {
+        if (isExpanded) {
+            delay(2000)
+            isExpanded = false
+        }
+    }
+
+    val trackHeight by animateFloatAsState(
+        targetValue = if (isExpanded) 36f else 8f,
+        animationSpec = tween(200),
+        label = "track_height",
+    )
+    val showLabels = isExpanded
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = formatPlaybackTime(positionMs),
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 11.sp,
-            )
-            Text(
-                text = formatPlaybackTime(durationMs),
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 11.sp,
-            )
+        // 时间标签 (仅放大时显示)
+        if (showLabels) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = formatPlaybackTime(positionMs),
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 10.sp,
+                )
+                Text(
+                    text = formatPlaybackTime(durationMs),
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 10.sp,
+                )
+            }
         }
         Slider(
             value = sliderValue,
-            onValueChange = { onSeek(it.toLong()) },
+            onValueChange = {
+                isExpanded = true
+                onSeek(it.toLong())
+            },
+            onValueChangeFinished = { /* 2s 后自动缩回 */ },
             valueRange = 0f..sliderMax,
-            modifier = Modifier.height(36.dp), // Larger touch target
+            modifier = Modifier.height(trackHeight.dp),
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
                 activeTrackColor = Color.White,
