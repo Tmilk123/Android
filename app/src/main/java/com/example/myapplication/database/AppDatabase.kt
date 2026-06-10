@@ -19,7 +19,7 @@ import com.example.myapplication.database.entity.SearchHistoryEntity
         FeedEntity::class,
         PlaybackMetricsEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -88,6 +88,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val migration4To5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 为常用查询添加索引
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_metrics_created ON playback_metrics(created_at)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_metrics_preloaded ON playback_metrics(is_preloaded)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_history_keyword ON search_history(keyword)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
@@ -95,7 +104,9 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "toutiao_video_client.db",
                 )
-                    .addMigrations(migration1To2, migration2To3, migration3To4)
+                    .addMigrations(migration1To2, migration2To3, migration3To4, migration4To5)
+                    // WAL 模式: 并发读写性能提升
+                    .setJournalMode(androidx.room.RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                     .build()
                     .also { instance = it }
             }

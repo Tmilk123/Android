@@ -70,6 +70,8 @@ class FeedViewModel(
             try { repository.clearFeedCache() } catch (_: Exception) {}
             uiState = FeedUiState(isLoading = false)
             loadNextPage()
+            // 首次启动时自动导出基准数据
+            repository.autoExportBenchmarkIfNeeded()
         }
     }
 
