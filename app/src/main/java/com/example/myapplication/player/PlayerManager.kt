@@ -100,12 +100,16 @@ class PlayerManager(
                 val handler = onVideoUrlExpired
                 if (videoId != null && handler != null) {
                     metricsScope.launch {
-                        Log.d(TAG, "URL may be expired, refreshing: $videoId")
-                        val refreshed = handler(videoId)
-                        if (refreshed != null) {
-                            Log.d(TAG, "URL refreshed, retrying playback")
-                            retryCount = 0
-                            play(refreshed)
+                        try {
+                            Log.d(TAG, "URL may be expired, refreshing: $videoId")
+                            val refreshed = handler(videoId)
+                            if (refreshed != null) {
+                                Log.d(TAG, "URL refreshed, retrying playback")
+                                retryCount = 0
+                                play(refreshed)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Refresh/retry failed: ${e.message}")
                         }
                     }
                 }
@@ -156,15 +160,19 @@ class PlayerManager(
             isLoading = true,
         )
 
-        if (matchedPreload) {
-            promotePreloadPlayer()
-        } else {
-            player.setMediaItem(MediaItem.fromUri(targetUrl))
-            player.prepare()
+        try {
+            if (matchedPreload) {
+                promotePreloadPlayer()
+            } else {
+                player.setMediaItem(MediaItem.fromUri(targetUrl))
+                player.prepare()
+            }
+            player.playWhenReady = true
+            player.play()
+        } catch (e: Exception) {
+            Log.e(TAG, "Play failed: ${e.message}")
+            state = state.copy(isLoading = false, hasError = true, errorMessage = "播放失败")
         }
-
-        player.playWhenReady = true
-        player.play()
 
         if (player.playbackState == Player.STATE_READY) {
             recordFirstReady()
