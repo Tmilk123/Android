@@ -71,13 +71,7 @@ fun FeedScreen(
         )
     }
     val playerManager = remember {
-        PlayerManager(
-            context = context,
-            metricsRepository = metricsRepository,
-            onVideoUrlExpired = { videoId ->
-                actualViewModel.repository.refreshVideoUrl(videoId)
-            },
-        )
+        PlayerManager(context)
     }
     val recommendWordEngine = remember { RecommendWordEngine() }
     val uiState = actualViewModel.uiState
