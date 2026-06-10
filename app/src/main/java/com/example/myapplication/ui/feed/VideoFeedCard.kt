@@ -143,8 +143,6 @@ fun VideoFeedCard(
                     factory = { ctx ->
                         PlayerView(ctx).apply {
                             useController = false
-                            // TextureView: 折叠屏兼容 (SurfaceView 在折叠机上易 crash)
-                            setSurfaceType(androidx.media3.ui.PlayerView.SURFACE_TYPE_TEXTURE_VIEW)
                             resizeMode = if (inLandscape)
                                 AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                             else
