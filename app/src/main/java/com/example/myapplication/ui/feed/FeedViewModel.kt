@@ -66,18 +66,9 @@ class FeedViewModel(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            val cached = repository.loadCachedFeed()
-            if (cached.items.isNotEmpty()) {
-                currentPage = cached.lastPage
-                uiState = FeedUiState(
-                    items = cached.items,
-                    isLoading = false,
-                    hasMore = true,
-                )
-            } else {
-                uiState = FeedUiState(isLoading = false)
-                loadNextPage()
-            }
+            // 始终加载最新数据 (跳过可能过期的缓存)
+            uiState = FeedUiState(isLoading = false)
+            loadNextPage()
         }
     }
 
