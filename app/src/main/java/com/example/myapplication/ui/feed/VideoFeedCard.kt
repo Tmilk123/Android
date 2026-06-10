@@ -389,7 +389,7 @@ fun VideoFeedCard(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .navigationBarsPadding()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 110.dp),
+                        .padding(start = 24.dp, end = 24.dp, bottom = 42.dp),
                 )
             }
         }

@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -74,102 +72,79 @@ fun FeedOverlay(
             )
         }
 
-        // ── Bottom: 相关搜索 (进度条下方) → 作者 + 标题 + 描述 ──
+        // ── 作者/标题/描述 (进度条上方) ──
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .navigationBarsPadding()
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 80.dp, bottom = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(start = 16.dp, end = 80.dp, bottom = 68.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            // 相关搜索 (一行)
-            if (recommendWords.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "🔍 相关搜索：",
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 13.sp,
-                    )
-                    recommendWords.take(4).forEach { word ->
-                        Text(
-                            text = word.word,
-                            color = Color(0xFF8CB3D9),
-                            fontSize = 13.sp,
-                            maxLines = 1,
-                            modifier = Modifier
-                                .padding(start = 6.dp)
-                                .clickable { onRecommendWordClick(word.word) },
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-
-            // 作者 + 关注
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = "@$authorName",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = "@$authorName", color = Color.White,
+                    fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "关注",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFD81E06))
-                        .clickable { }
+                    text = "关注", color = Color.White,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFD81E06)).clickable { }
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                 )
             }
-
-            // 标题
             Text(
-                text = title,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                text = title, color = Color.White,
+                fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-
-            // 描述
             if (description.isNotBlank()) {
                 Text(
-                    text = description,
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    text = description, color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp, lineHeight = 18.sp,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
             }
         }
 
-        // ── Bottom Right: 头像 + 互动 ──
+        // ── 相关搜索 (进度条正下方) ──
+        if (recommendWords.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, end = 80.dp, bottom = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "🔍 相关搜索：",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                )
+                recommendWords.take(4).forEach { word ->
+                    Text(
+                        text = word.word, color = Color(0xFF8CB3D9),
+                        fontSize = 13.sp, maxLines = 1,
+                        modifier = Modifier.padding(start = 6.dp)
+                            .clickable { onRecommendWordClick(word.word) },
+                    )
+                }
+            }
+        }
+
+        // ── Bottom Right: 头像 + 互动按钮 (进度条上方) ──
         InteractionButtons(
-            authorName = authorName,
-            authorAvatar = authorAvatar,
-            likeCount = likeCount,
-            commentCount = commentCount,
-            collectCount = collectCount,
-            shareCount = shareCount,
+            authorName = authorName, authorAvatar = authorAvatar,
+            likeCount = likeCount, commentCount = commentCount,
+            collectCount = collectCount, shareCount = shareCount,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 8.dp, bottom = 14.dp),
+                .padding(end = 8.dp, bottom = 68.dp),
         )
     }
 }
