@@ -31,7 +31,15 @@ class PlayerManager(
 
     private val appContext = context.applicationContext
 
-    var player by mutableStateOf(createPlayer())
+    var player by mutableStateOf(
+        try {
+            ExoPlayer.Builder(appContext).build()
+        } catch (e: Exception) {
+            Log.e(TAG, "ExoPlayer failed: ${e.message}")
+            // 最简降级: 无任何配置
+            ExoPlayer.Builder(appContext.applicationContext).build()
+        }
+    )
         private set
 
     var state by mutableStateOf(VideoPlayerState())
