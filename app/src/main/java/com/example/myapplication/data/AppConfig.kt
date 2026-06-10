@@ -11,7 +11,7 @@ import java.util.Properties
  */
 object AppConfig {
     /** 数据源: "fake" | "verified" | "pexels" */
-    var dataSource: String = "pexels"
+    var dataSource: String = "verified"
 
     /** 从 local.properties 读取 Pexels API Key */
     val pexelsApiKey: String by lazy {
