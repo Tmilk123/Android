@@ -7,10 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.FeedRepository
 import com.example.myapplication.model.FeedItem
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class FeedUiState(
@@ -27,23 +23,10 @@ class FeedViewModel(
         private set
 
     private var currentPage = 0
-    private var currentCategory: String = "推荐"
-    private var loadJob: Job? = null
+    private var initialLoadDone = false
 
     init {
         loadInitialData()
-    }
-
-    /** 切换分类 → 重新加载 */
-    fun selectCategory(category: String) {
-        if (category == currentCategory) return
-        currentCategory = category
-        currentPage = 0
-        uiState = FeedUiState(isLoading = true)
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            loadNextPage()
-        }
     }
 
     fun loadNextPageIfNeeded(currentIndex: Int) {
@@ -54,9 +37,13 @@ class FeedViewModel(
     }
 
     suspend fun loadUntilVideo(videoId: String): Int {
+        // 等待初始加载完成
+        while (!initialLoadDone) {
+            kotlinx.coroutines.delay(50)
+        }
         // 先在已加载项中查找
         findLoadedVideoIndex(videoId).takeIf { it >= 0 }?.let { return it }
-
+        // 继续加载直到找到
         while (uiState.hasMore) {
             loadNextPage()
             findLoadedVideoIndex(videoId).takeIf { it >= 0 }?.let { return it }
@@ -66,22 +53,19 @@ class FeedViewModel(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            // 清除可能过期的 Room 缓存
             try { repository.clearFeedCache() } catch (_: Exception) {}
             uiState = FeedUiState(isLoading = false)
             loadNextPage()
-            // 首次启动时自动导出基准数据
+            initialLoadDone = true
             repository.autoExportBenchmarkIfNeeded()
         }
     }
 
     private suspend fun loadNextPage() {
-        if (!uiState.hasMore) return
-
+        if (uiState.isLoading || !uiState.hasMore) return
         uiState = uiState.copy(isLoading = true)
         val nextPage = currentPage + 1
         val newItems = repository.loadFeedPage(page = nextPage, pageSize = PAGE_SIZE)
-
         currentPage = if (newItems.isEmpty()) currentPage else nextPage
         uiState = uiState.copy(
             items = uiState.items + newItems,

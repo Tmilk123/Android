@@ -28,9 +28,14 @@ class SearchViewModel(
         val keyword = input.trim()
         if (keyword.isEmpty()) return null
 
-        // 必须用 runBlocking 确保写入完成再跳转, 否则 ViewModel 销毁会取消写入
-        kotlinx.coroutines.runBlocking {
-            repository.insertHistory(keyword)
+        // 同步写入确保跳转前数据落盘
+        try {
+            kotlinx.coroutines.runBlocking {
+                repository.insertHistory(keyword)
+            }
+            android.util.Log.d("SearchVM", "History saved: $keyword")
+        } catch (e: Exception) {
+            android.util.Log.e("SearchVM", "Save failed: ${e.message}", e)
         }
         return keyword
     }
