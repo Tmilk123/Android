@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.search
 
 import androidx.lifecycle.ViewModel
+import com.example.myapplication.data.AppConfig
 import com.example.myapplication.data.FakeFeedRepository
 import com.example.myapplication.data.SearchRankedVideo
 import com.example.myapplication.data.SearchRanker
@@ -14,7 +15,7 @@ data class SearchResultUiState(
 )
 
 class SearchResultViewModel(
-    private val repository: FakeFeedRepository = FakeFeedRepository(),
+    private val repository: FakeFeedRepository = FakeFeedRepository(useRealData = AppConfig.dataSource != "fake"),
     private val searchRanker: SearchRanker = SearchRanker(),
 ) : ViewModel() {
 

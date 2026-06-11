@@ -10,7 +10,7 @@ import com.example.myapplication.model.VideoItem
  * 按用户输入的前缀匹配，返回排序后的联想建议。
  */
 class SearchSuggestionEngine(
-    private val fakeRepository: FakeFeedRepository = FakeFeedRepository(),
+    private val fakeRepository: FakeFeedRepository = FakeFeedRepository(useRealData = AppConfig.dataSource != "fake"),
 ) {
 
     /** 所有可被搜索到的词汇 (构建一次后缓存) */
