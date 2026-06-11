@@ -188,7 +188,7 @@ fun SearchScreen(
                 }
             }
         } else {
-            // 无输入 → 显示热门搜索
+            // 无输入 → 显示热门搜索 (基于当前视频库)
             Text(
                 text = "热门搜索",
                 color = Color(0xFF222222),
@@ -202,8 +202,13 @@ fun SearchScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                suggestionEngine.hotSearchWords(6).forEachIndexed { index, term ->
-                    val rank = (index + 1).toString()
+                // 基于 RealVideoDataSource 实际内容的热门搜索词
+                val hotWords = listOf(
+                    "搞笑" to "1", "动画" to "2", "旅行" to "3",
+                    "海洋" to "4", "自然" to "5", "城市" to "6",
+                    "电影" to "7", "美食" to "8",
+                )
+                hotWords.forEach { (word, rank) ->
                     val rankColor = when (rank) {
                         "1" -> Color(0xFFD81E06)
                         "2" -> Color(0xFFFF6B35)
@@ -213,8 +218,8 @@ fun SearchScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { submit(term.word) }
-                            .padding(vertical = 9.dp),
+                            .clickable { submit(word) }
+                            .padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -226,10 +231,15 @@ fun SearchScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = term.word,
+                            text = word,
                             color = Color(0xFF333333),
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = ">",
+                            color = Color(0xFFCCCCCC),
+                            fontSize = 14.sp,
                         )
                     }
                 }
