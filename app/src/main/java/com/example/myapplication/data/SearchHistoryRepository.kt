@@ -27,12 +27,17 @@ class SearchHistoryRepository(
         val trimmedKeyword = keyword.trim()
         if (trimmedKeyword.isEmpty()) return
 
-        dao.insertHistory(
-            SearchHistoryEntity(
-                keyword = trimmedKeyword,
-                createdAt = System.currentTimeMillis(),
+        try {
+            dao.insertHistory(
+                SearchHistoryEntity(
+                    keyword = trimmedKeyword,
+                    createdAt = System.currentTimeMillis(),
+                )
             )
-        )
+            android.util.Log.d("SearchHistory", "Saved: $trimmedKeyword")
+        } catch (e: Exception) {
+            android.util.Log.e("SearchHistory", "Failed to save: ${e.message}", e)
+        }
     }
 
     override suspend fun deleteHistoryById(id: Long) {
