@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -192,7 +191,6 @@ fun FeedScreen(
             else -> {
                 VerticalPager(
                     state = pagerState,
-                    flingBehavior = PagerSnapDistance(atMost = 1).snapPagerFlingBehavior(pagerState),
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
                     when (val feedItem = uiState.items[page]) {
