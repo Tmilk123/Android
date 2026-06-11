@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,11 +21,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -92,26 +95,30 @@ fun FeedScreen(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage, uiState.items.size) {
-        val currentItem = uiState.items.getOrNull(pagerState.currentPage)
-        when (currentItem) {
-            is FeedItem.Video -> {
-                // 双向预加载: 优先下一个, 其次上一个
-                val nextItem = uiState.items.getOrNull(pagerState.currentPage + 1)
-                if (nextItem is FeedItem.Video) {
-                    playerManager.preloadNext(nextItem.item)
-                }
-                val prevItem = uiState.items.getOrNull(pagerState.currentPage - 1)
-                if (prevItem is FeedItem.Video) {
-                    playerManager.preloadPrevious(prevItem.item)
+    // 用 snapshotFlow 监听滑动 (比 LaunchedEffect 更高效, 减少 recomposition)
+    val currentPage by remember { derivedStateOf { pagerState.currentPage } }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage to uiState.items.size }
+            .distinctUntilChanged()
+            .collect { (page, _) ->
+                val item = uiState.items.getOrNull(page) ?: return@collect
+                when (item) {
+                    is FeedItem.Video -> {
+                        // 预加载下一个视频 (优先)
+                        (uiState.items.getOrNull(page + 1) as? FeedItem.Video)?.let {
+                            playerManager.preloadNext(it.item)
+                        }
+                        // 预加载上一个视频 (备用)
+                        (uiState.items.getOrNull(page - 1) as? FeedItem.Video)?.let {
+                            playerManager.preloadPrevious(it.item)
+                        }
+                    }
+                    else -> {
+                        playerManager.pause()
+                        playerManager.clearPreload()
+                    }
                 }
             }
-
-            else -> {
-                playerManager.pause()
-                playerManager.clearPreload()
-            }
-        }
     }
 
     DisposableEffect(lifecycleOwner, playerManager) {
@@ -185,6 +192,7 @@ fun FeedScreen(
             else -> {
                 VerticalPager(
                     state = pagerState,
+                    flingBehavior = PagerSnapDistance(atMost = 1).snapPagerFlingBehavior(pagerState),
                     modifier = Modifier.fillMaxSize(),
                 ) { page ->
                     when (val feedItem = uiState.items[page]) {

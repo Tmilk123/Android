@@ -101,7 +101,7 @@ fun VideoFeedCard(
     LaunchedEffect(isActive, item.videoUrl) {
         while (isActive) {
             playerManager.refreshProgress()
-            delay(250)
+            delay(500)  // 降低刷新频率减少滚动时主线程负载
         }
     }
 
